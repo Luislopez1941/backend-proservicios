@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserType {
+  client
+  worker
+}
+
+enum JobUrgency {
+  normal
+  urgent
+}
+
+enum JobStatus {
+  open
+  in_progress
+  completed
+  cancelled
+}
+
+enum ChatType {
+  private
+  group
+}
+
+enum MessageType {
+  normal
+  proposal
+}
+
+enum ProposalStatus {
+  active
+  canceled
+  accepted
+}
+
+// Models
+model User {
+  id                Int      @id @default(autoincrement())
+  first_name        String   @db.VarChar(255)
+  second_name       String?  @db.VarChar(255)
+  first_surname     String   @db.VarChar(255)
+  second_last_name  String?  @db.VarChar(255)
+  country           String?  @db.VarChar(255)
+  email             String   @unique @db.VarChar(255)
+  password          String   @db.VarChar(255)
+  profilePhoto      String?  @db.Text
+  background        String?  @db.Text
+  workPhotos        Json?
+  phone             String   @db.VarChar(255)
+  description       String?  @default("") @db.Text
+  gender            String?  @db.VarChar(50)
+  professions       Json?
+  starts            Json?
+  verified          Boolean  @default(false)
+  reviewsCount      Int      @default(0)
+  rating            Float    @default(5.0)
+  birthdate         DateTime?
+  dni               String?  @db.VarChar(50)
+  type_user         UserType?
+  id_state          Int?
+  id_municipality   Int?
+  
+  // Relaciones
+  state             State?     @relation(fields: [id_state], references: [id], onDelete: SetNull)
+  municipality      Municipality? @relation(fields: [id_municipality], references: [id], onDelete: SetNull)
+  
+  // Relaciones inversas
+  jobs              Job[]
+  sentMessages      Message[] @relation("MessageSender")
+  receivedMessages  Message[] @relation("MessageReceiver")
+  user1Chats        Chat[] @relation("ChatIssuer")
+  user2Chats        Chat[] @relation("ChatReceiver")
+  proposals         JobProposal[]
+  
+  @@map("users")
+}
+
+model Job {
+  id              Int      @id @default(autoincrement())
+  id_user         Int
+  title           String   @db.VarChar(255)
+  description     String   @db.Text
+  category        String   @db.VarChar(255)
+  budget          Json
+  location        String   @db.VarChar(255)
+  urgency         JobUrgency @default(normal)
+  status          JobStatus @default(open)
+  professions     Json
+  images          Json?
+  price           String   @db.VarChar(255)
+  id_municipality Int
+  id_locality     Int?
+  proposalsCount  Int      @default(0)
+  postedTime      DateTime @default(now())
+  viewsCount      Int      @default(0)
+  requirements    Json?
+  timeline        String?  @db.VarChar(255)
+  workType        String?  @db.VarChar(255)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  
+  // Relaciones
+  user            User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  municipality    Municipality @relation(fields: [id_municipality], references: [id])
+  locality        Locality? @relation(fields: [id_locality], references: [id])
+  
+  @@map("jobs")
+}
+
+model State {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique @db.VarChar(100)
+  type          String   @default("state") @db.VarChar(50)
+  
+  // Relaciones inversas
+  municipalities Municipality[]
+  localities    Locality[]
+  users         User[]
+  
+  @@map("states")
+}
+
+model Municipality {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  id_state   Int
+  type       String   @default("municipality") @db.VarChar(50)
+  
+  // Relaciones
+  state      State    @relation(fields: [id_state], references: [id])
+  
+  // Relaciones inversas
+  localities Locality[]
+  users      User[]
+  jobs       Job[]
+  
+  @@unique([name, id_state], name: "municipalities_name_state_unique")
+  @@map("municipalities")
+}
+
+model Locality {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  id_state        Int
+  id_municipality Int
+  type            String   @default("locality") @db.VarChar(255)
+  
+  // Relaciones
+  state           State        @relation(fields: [id_state], references: [id])
+  municipality    Municipality @relation(fields: [id_municipality], references: [id])
+  
+  // Relaciones inversas
+  jobs            Job[]
+  
+  @@map("localities")
+}
+
+model Profession {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  
+  @@map("professions")
+}
+
+model Chat {
+  id            Int      @id @default(autoincrement())
+  chat_type     ChatType
+  created_at    DateTime @default(now())
+  issuer_id     Int
+  receiver_id   Int
+  message_text  Json
+  updated_at    DateTime @default(now())
+  
+  // Relaciones
+  issuer        User     @relation("ChatIssuer", fields: [issuer_id], references: [id])
+  receiver      User     @relation("ChatReceiver", fields: [receiver_id], references: [id])
+  
+  // Relaciones inversas
+  messages      Message[]
+  
+  @@map("chats")
+}
+
+model Message {
+  id                  Int         @id @default(autoincrement())
+  issuer_id           Int
+  receiver_id         Int
+  chat_id             Int
+  message             String?     @db.Text
+  title               String?
+  type_message        MessageType
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @default(now())
+  unread_count        Int         @default(0)
+  last_message_sender String
+  message_status      String
+  is_online           Boolean     @default(true)
+  
+  // Relaciones
+  issuer              User        @relation("MessageSender", fields: [issuer_id], references: [id])
+  receiver            User        @relation("MessageReceiver", fields: [receiver_id], references: [id])
+  chat                Chat        @relation(fields: [chat_id], references: [id], onDelete: Cascade)
+  
+  // Relaciones inversas
+  proposal            JobProposal?
+  
+  @@map("messages")
+}
+
+model JobProposal {
+  id           Int            @id @default(autoincrement())
+  message_id   Int            @unique
+  user_id      Int
+  issuer_id    Int
+  receiver_id  Int
+  title        String
+  description  String?         @db.Text
+  images       Json?
+  status       ProposalStatus  @default(active)
+  created_at   DateTime        @default(now())
+  updated_at   DateTime        @default(now())
+  
+  // Relaciones
+  message      Message         @relation(fields: [message_id], references: [id])
+  user         User            @relation(fields: [user_id], references: [id])
+  
+  @@map("jobproposals")
+}
+
+model Location {
+  id          Int    @id @default(autoincrement())
+  id_location Int
+  name        String @db.VarChar(255)
+  type        String @db.VarChar(50)
+  
+  @@unique([id_location, type], name: "id_location_type")
+  @@map("locations")
+}
