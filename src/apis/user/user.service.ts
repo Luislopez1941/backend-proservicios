@@ -4,11 +4,21 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SearchCustomersDto } from './dto/search-customers.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { GoogleMapsService } from '../google-maps/google-maps.service';
+import { AddressValidationService } from '../validation/address-validation.service';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private googleMaps: GoogleMapsService,
+    private addressValidation: AddressValidationService,
+    private supabaseStorage: SupabaseStorageService
+  ) {
+    console.log('UserService constructor - SupabaseStorageService inyectado:', !!this.supabaseStorage);
+  }
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
@@ -35,18 +45,91 @@ export class UserService {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
 
+      // Validar y geocodificar la ubicación usando Google Maps
+      let locationData;
+      try {
+        // Validación robusta de la dirección
+        const validationResult = this.addressValidation.validateAddressInput(createUserDto.location.address);
+        
+        if (!validationResult.isValid) {
+          const errorMessage = validationResult.errors.join('. ');
+          const suggestions = validationResult.suggestions.length > 0 
+            ? ` Sugerencias: ${validationResult.suggestions.join(', ')}`
+            : '';
+          
+          return {
+            status: 'warning',
+            message: `${errorMessage}.${suggestions}`
+          };
+        }
+
+        // Detectar direcciones sospechosas
+        const suspiciousCheck = this.addressValidation.detectSuspiciousAddress(validationResult.cleanAddress);
+        if (suspiciousCheck.isSuspicious) {
+          return {
+            status: 'warning',
+            message: `Dirección sospechosa detectada: ${suspiciousCheck.reasons.join(', ')}. Por favor, usa una dirección real.`
+          };
+        }
+
+        const cleanAddress = validationResult.cleanAddress;
+
+        // Construir dirección completa con México al final para evitar ambigüedades
+        const fullAddress = this.buildCompleteAddress(cleanAddress, createUserDto.location);
+
+        // Siempre geocodificar la dirección para generar place_id automáticamente
+        locationData = await this.googleMaps.geocodeAddress(fullAddress);
+
+        // Validar coordenadas geográficas
+        const coordValidation = this.addressValidation.validateCoordinates(
+          locationData.coordinates.lat, 
+          locationData.coordinates.lng,
+          createUserDto.location.pais
+        );
+        
+        if (!coordValidation.isValid) {
+          return {
+            status: 'warning',
+            message: `Coordenadas inválidas: ${coordValidation.errors.join(', ')}`
+          };
+        }
+
+      } catch (error) {
+        console.error('Error en validación de dirección:', error);
+        
+        // Mensajes específicos según el tipo de error
+        if (error.message.includes('No se encontró')) {
+          return {
+            status: 'warning',
+            message: 'No se encontró la dirección. Intenta con una dirección más específica (ej: "Calle 123, Colonia Centro, Ciudad")'
+          };
+        } else if (error.message.includes('API_KEY')) {
+          return {
+            status: 'error',
+            message: 'Error de configuración del sistema. Contacta al administrador.'
+          };
+        } else {
+          return {
+            status: 'warning',
+            message: 'La dirección no es válida. Verifica que esté escrita correctamente y sea una dirección real.'
+          };
+        }
+      }
+
       // Preparar los datos para crear el usuario
-      const { id_state, id_municipality, id_locality, professions, acceptTerms, ...userData } = createUserDto;
+      const { location, professions, acceptTerms, ...userData } = createUserDto;
 
       // Crear el usuario
       const user = await this.prisma.user.create({
         data: {
           ...userData,
           password: hashedPassword,
-          // Manejar las relaciones correctamente
-          ...(id_state && { state: { connect: { id: id_state } } }),
-          ...(id_municipality && { municipality: { connect: { id: id_municipality } } }),
-          ...(id_locality && { locality: { connect: { id: id_locality } } }),
+          // Datos de ubicación de Google Maps
+          location_address: locationData.address,
+          location_lat: locationData.coordinates.lat,
+          location_lng: locationData.coordinates.lng,
+          location_place_id: locationData.place_id,
+          location_bounds: locationData.bounds,
           // Guardar professions como JSON
           ...(professions && { professions: professions }),
         },
@@ -60,6 +143,10 @@ export class UserService {
           phone: true,
           type_user: true,
           verified: true,
+          location_address: true,
+          location_lat: true,
+          location_lng: true,
+          location_place_id: true,
         }
       });
 
@@ -80,30 +167,7 @@ export class UserService {
   async getUserById(id: number): Promise<UserResponseDto> {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          first_name: true,
-          second_name: true,
-          first_surname: true,
-          second_last_name: true,
-          email: true,
-          phone: true,
-          description: true,
-          gender: true,
-          type_user: true,
-          verified: true,
-          reviewsCount: true,
-          rating: true,
-          birthdate: true,
-          dni: true,
-          state: {
-            select: { id: true, name: true }
-          },
-          municipality: {
-            select: { id: true, name: true }
-          }
-        }
+        where: { id }
       });
 
       if (!user) {
@@ -113,10 +177,41 @@ export class UserService {
         };
       }
 
+      // Log para debug
+      console.log('Usuario completo de la DB:', JSON.stringify(user, null, 2));
+      
       return {
         status: 'success',
         message: 'Usuario encontrado',
-        data: user
+        data: {
+          id: user.id,
+          first_name: user.first_name,
+          second_name: user.second_name ?? null,
+          first_surname: user.first_surname,
+          second_last_name: user.second_last_name ?? null,
+          country: user.country ?? null,
+          email: user.email,
+          password: user.password,
+          profilePhoto: user.profilePhoto ?? null,
+          background: user.background ?? null,
+          workPhotos: user.workPhotos ?? null,
+          phone: user.phone,
+          description: user.description ?? null,
+          gender: user.gender ?? null,
+          professions: user.professions ?? null,
+          starts: user.starts ?? null,
+          verified: user.verified,
+          reviewsCount: user.reviewsCount,
+          rating: user.rating,
+          birthdate: user.birthdate ?? null,
+          dni: user.dni ?? null,
+          type_user: user.type_user ?? null,
+          location_address: user.location_address ?? null,
+          location_lat: user.location_lat ?? null,
+          location_lng: user.location_lng ?? null,
+          location_place_id: user.location_place_id ?? null,
+          location_bounds: user.location_bounds ?? null,
+        }
       };
     } catch (error) {
       console.error('Error en getUserById:', error);
@@ -141,8 +236,71 @@ export class UserService {
         };
       }
 
+      // Procesar imágenes si están presentes
+      const imageUpdates: any = {};
+      
+            // Procesar foto de perfil
+            if (updateUserDto.profilePhoto && updateUserDto.profilePhoto.trim() !== '') {
+              try {
+                console.log('Procesando foto de perfil para usuario:', id);
+                console.log('Base64 length:', updateUserDto.profilePhoto.length);
+                console.log('Base64 preview:', updateUserDto.profilePhoto.substring(0, 50) + '...');
+                
+                const profilePhotoUrl = await this.supabaseStorage.uploadProfilePhoto(
+                  updateUserDto.profilePhoto,
+                  id
+                );
+                console.log('Foto de perfil subida exitosamente:', profilePhotoUrl);
+                imageUpdates.profilePhoto = profilePhotoUrl;
+              } catch (error) {
+                console.error('Error detallado al procesar foto de perfil:', error);
+                return {
+                  status: 'error',
+                  message: `Error al procesar la foto de perfil: ${error.message}`
+                };
+              }
+            }
+
+      // Procesar imagen de fondo
+      if (updateUserDto.background && updateUserDto.background.trim() !== '') {
+        try {
+          const backgroundUrl = await this.supabaseStorage.uploadBackgroundImage(
+            updateUserDto.background,
+            id
+          );
+          imageUpdates.background = backgroundUrl;
+        } catch (error) {
+          return {
+            status: 'error',
+            message: 'Error al procesar la imagen de fondo'
+          };
+        }
+      }
+
+      // Procesar fotos de trabajo
+      if (updateUserDto.workPhotos && updateUserDto.workPhotos.length > 0) {
+        try {
+          const validWorkPhotos = updateUserDto.workPhotos.filter(photo => 
+            photo && photo.trim() !== ''
+          );
+          
+          if (validWorkPhotos.length > 0) {
+            const workPhotoUrls = await this.supabaseStorage.uploadWorkPhotos(
+              validWorkPhotos,
+              id
+            );
+            imageUpdates.workPhotos = workPhotoUrls;
+          }
+        } catch (error) {
+          return {
+            status: 'error',
+            message: 'Error al procesar las fotos de trabajo'
+          };
+        }
+      }
+
       // Preparar los datos para actualizar el usuario
-      const { id_state, id_municipality, id_locality, professions, acceptTerms, ...userData } = updateUserDto;
+      const { profilePhoto, background, workPhotos, id: userId, type, ...userData } = updateUserDto;
 
       // Si se está actualizando la contraseña, encriptarla
       let updateData = { ...userData };
@@ -153,18 +311,7 @@ export class UserService {
 
       // Preparar las relaciones para la actualización
       const relationData: any = {};
-      if (id_state !== undefined) {
-        relationData.state = id_state ? { connect: { id: id_state } } : { disconnect: true };
-      }
-      if (id_municipality !== undefined) {
-        relationData.municipality = id_municipality ? { connect: { id: id_municipality } } : { disconnect: true };
-      }
-      if (id_locality !== undefined) {
-        relationData.locality = id_locality ? { connect: { id: id_locality } } : { disconnect: true };
-      }
-      if (professions !== undefined) {
-        relationData.professions = professions;
-      }
+      // Las profesiones ahora se manejan directamente en userData si están presentes
 
       // Actualizar el usuario
       const user = await this.prisma.user.update({
@@ -172,6 +319,7 @@ export class UserService {
         data: {
           ...updateData,
           ...relationData,
+          ...imageUpdates, // Incluir las URLs de las imágenes procesadas
         },
         select: {
           id: true,
@@ -183,6 +331,13 @@ export class UserService {
           phone: true,
           type_user: true,
           verified: true,
+          profilePhoto: true,
+          background: true,
+          workPhotos: true,
+          location_address: true,
+          location_lat: true,
+          location_lng: true,
+          location_place_id: true,
         }
       });
 
@@ -210,16 +365,9 @@ export class UserService {
 
       let whereCondition: any = {};
 
-      // Verificar si type_location existe y tiene las propiedades necesarias
-      if (type_location?.id_location) {
-        if (type_location.type === 'state') {
-          whereCondition.state = { id: type_location.id_location };
-        } else if (type_location.type === 'municipality') {
-          whereCondition.municipality = { id: type_location.id_location };
-        }
-        
-        console.log('Condición de búsqueda:', whereCondition);
-      }
+      // Por ahora no aplicamos filtros de ubicación específicos
+      // En el futuro se pueden implementar filtros por coordenadas o place_id
+      console.log('Condición de búsqueda:', whereCondition);
 
       // Agregar condición para profesiones si existe type_service
       if (type_service) {
@@ -252,12 +400,10 @@ export class UserService {
             rating: true,
             professions: true,
             workPhotos: true,
-            state: {
-              select: { id: true, name: true }
-            },
-            municipality: {
-              select: { id: true, name: true }
-            }
+            location_address: true,
+            location_lat: true,
+            location_lng: true,
+            location_place_id: true
           }
         }),
         this.prisma.user.count({
@@ -319,5 +465,124 @@ export class UserService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async debugUser(id: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id }
+      });
+
+      if (!user) {
+        return {
+          status: 'warning',
+          message: 'Usuario no encontrado'
+        };
+      }
+
+      return {
+        status: 'success',
+        message: 'Usuario encontrado (debug)',
+        data: user
+      };
+    } catch (error) {
+      console.error('Error en debugUser:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener el usuario'
+      };
+    }
+  }
+
+  async rawUser(id: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id }
+      });
+
+      if (!user) {
+        return {
+          status: 'warning',
+          message: 'Usuario no encontrado'
+        };
+      }
+
+      // Devolver el objeto tal como viene de la base de datos
+      console.log('Usuario raw de la DB:', JSON.stringify(user, null, 2));
+      return user;
+    } catch (error) {
+      console.error('Error en rawUser:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener el usuario'
+      };
+    }
+  }
+
+  async testImageUpload(base64Image: string) {
+    try {
+      console.log('Test de subida de imagen iniciado');
+      console.log('Base64 length:', base64Image.length);
+      console.log('Base64 preview:', base64Image.substring(0, 50) + '...');
+      
+      const url = await this.supabaseStorage.uploadImageFromBase64(
+        base64Image,
+        'test-image',
+        'profile-photos'
+      );
+      
+      console.log('Imagen subida exitosamente:', url);
+      
+      return {
+        status: 'success',
+        message: 'Imagen subida exitosamente',
+        data: {
+          url,
+          fileName: 'test-image.jpg'
+        }
+      };
+    } catch (error) {
+      console.error('Error en testImageUpload:', error);
+      return {
+        status: 'error',
+        message: `Error al subir imagen: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Construye una dirección completa usando el país del usuario
+   */
+  private buildCompleteAddress(address: string, location: any): string {
+    const parts: string[] = [];
+    
+    // Agregar la dirección base
+    parts.push(address.trim());
+    
+    // Agregar municipio si existe
+    if (location.municipio) {
+      parts.push(location.municipio.trim());
+    }
+    
+    // Agregar estado si existe
+    if (location.estado) {
+      parts.push(location.estado.trim());
+    }
+    
+    // Agregar código postal si existe
+    if (location.codigo_postal) {
+      parts.push(location.codigo_postal.trim());
+    }
+    
+    // Usar el país del usuario, o México por defecto
+    const pais = location.pais || 'México';
+    parts.push(pais);
+    
+    const fullAddress = parts.join(', ');
+    
+    // Log para debugging
+    console.log('Dirección construida:', fullAddress);
+    
+    return fullAddress;
   }
 }

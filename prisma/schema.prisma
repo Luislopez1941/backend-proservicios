@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DIRECT_URL")
 }
 
 // Enums
@@ -68,12 +68,13 @@ model User {
   birthdate         DateTime?
   dni               String?  @db.VarChar(50)
   type_user         UserType?
-  id_state          Int?
-  id_municipality   Int?
   
-  // Relaciones
-  state             State?     @relation(fields: [id_state], references: [id], onDelete: SetNull)
-  municipality      Municipality? @relation(fields: [id_municipality], references: [id], onDelete: SetNull)
+  // Google Maps Location Data
+  location_address    String?  @db.Text
+  location_lat        Float?
+  location_lng        Float?
+  location_place_id   String?  @db.VarChar(255)
+  location_bounds     Json?
   
   // Relaciones inversas
   jobs              Job[]
@@ -99,8 +100,6 @@ model Job {
   professions     Json
   images          Json?
   price           String   @db.VarChar(255)
-  id_municipality Int
-  id_locality     Int?
   proposalsCount  Int      @default(0)
   postedTime      DateTime @default(now())
   viewsCount      Int      @default(0)
@@ -110,61 +109,19 @@ model Job {
   created_at      DateTime @default(now())
   updated_at      DateTime @default(now())
   
+  // Google Maps Location Data
+  location_address    String?  @db.Text
+  location_lat        Float?
+  location_lng        Float?
+  location_place_id   String?  @db.VarChar(255)
+  location_bounds     Json?
+  
   // Relaciones
   user            User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
-  municipality    Municipality @relation(fields: [id_municipality], references: [id])
-  locality        Locality? @relation(fields: [id_locality], references: [id])
   
   @@map("jobs")
 }
 
-model State {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique @db.VarChar(100)
-  type          String   @default("state") @db.VarChar(50)
-  
-  // Relaciones inversas
-  municipalities Municipality[]
-  localities    Locality[]
-  users         User[]
-  
-  @@map("states")
-}
-
-model Municipality {
-  id         Int      @id @default(autoincrement())
-  name       String   @db.VarChar(100)
-  id_state   Int
-  type       String   @default("municipality") @db.VarChar(50)
-  
-  // Relaciones
-  state      State    @relation(fields: [id_state], references: [id])
-  
-  // Relaciones inversas
-  localities Locality[]
-  users      User[]
-  jobs       Job[]
-  
-  @@unique([name, id_state], name: "municipalities_name_state_unique")
-  @@map("municipalities")
-}
-
-model Locality {
-  id              Int      @id @default(autoincrement())
-  name            String   @db.VarChar(255)
-  id_state        Int
-  id_municipality Int
-  type            String   @default("locality") @db.VarChar(255)
-  
-  // Relaciones
-  state           State        @relation(fields: [id_state], references: [id])
-  municipality    Municipality @relation(fields: [id_municipality], references: [id])
-  
-  // Relaciones inversas
-  jobs            Job[]
-  
-  @@map("localities")
-}
 
 model Profession {
   id   Int    @id @default(autoincrement())

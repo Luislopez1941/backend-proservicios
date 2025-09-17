@@ -164,4 +164,39 @@ export class ProfessionService {
       };
     }
   }
+
+  async searchProfessions(searchTerm: string) {
+    try {
+      if (!searchTerm || searchTerm.trim() === '') {
+        return {
+          status: 'warning',
+          message: 'El término de búsqueda no puede estar vacío',
+          data: []
+        };
+      }
+
+      const professions = await this.prisma.profession.findMany({
+        where: {
+          name: {
+            contains: searchTerm.trim(),
+            mode: 'insensitive' // Búsqueda case-insensitive
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+
+      return {
+        status: 'success',
+        message: 'Búsqueda realizada exitosamente',
+        data: professions
+      };
+    } catch (error) {
+      console.error('Error en searchProfessions:', error);
+      return {
+        status: 'error',
+        message: 'Error en la búsqueda de profesiones',
+        data: []
+      };
+    }
+  }
 }

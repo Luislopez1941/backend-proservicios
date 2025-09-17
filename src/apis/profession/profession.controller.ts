@@ -7,9 +7,9 @@ import { UpdateProfessionDto } from './dto/update-profession.dto';
 export class ProfessionController {
   constructor(private readonly professionService: ProfessionService) {}
 
-  @Post()
-  async create(@Body(ValidationPipe) createProfessionDto: CreateProfessionDto) {
-    return this.professionService.create(createProfessionDto);
+  @Get('search-professions/:searchTerm')
+  async searchProfessions(@Param('searchTerm') searchTerm: string) {
+    return this.professionService.searchProfessions(searchTerm);
   }
 
   @Get('get-professions')
