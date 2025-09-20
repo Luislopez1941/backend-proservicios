@@ -105,9 +105,39 @@ export class SupabaseStorageService {
     fileNamePrefix: string,
     bucket: string = 'profile-photos'
   ): Promise<string[]> {
-    const uploadPromises = base64Images.map((base64, index) => 
-      this.uploadImageFromBase64(base64, `${fileNamePrefix}-${index}`, bucket)
-    );
+    if (!base64Images || base64Images.length === 0) {
+      return [];
+    }
+
+    // Verificar que el bucket existe primero
+    try {
+      const { data: buckets, error: listError } = await this.supabase.storage.listBuckets();
+      
+      if (listError) {
+        this.logger.error('Error al listar buckets:', listError);
+        throw new Error(`Error al verificar buckets: ${listError.message}`);
+      }
+
+      const bucketExists = buckets.find(b => b.name === bucket);
+      if (!bucketExists) {
+        this.logger.error(`Bucket '${bucket}' no encontrado. Buckets disponibles:`, buckets.map(b => b.name));
+        throw new Error(`El bucket '${bucket}' no existe. Buckets disponibles: ${buckets.map(b => b.name).join(', ')}`);
+      }
+
+      this.logger.log(`Bucket '${bucket}' encontrado, subiendo ${base64Images.length} imágenes...`);
+    } catch (error) {
+      this.logger.error('Error verificando bucket:', error);
+      throw error;
+    }
+
+    const uploadPromises = base64Images.map(async (base64, index) => {
+      try {
+        return await this.uploadImageFromBase64(base64, `${fileNamePrefix}-${index}`, bucket);
+      } catch (error) {
+        this.logger.error(`Error subiendo imagen ${index}:`, error);
+        throw new Error(`Error subiendo imagen ${index + 1}: ${error.message}`);
+      }
+    });
 
     try {
       const urls = await Promise.all(uploadPromises);
@@ -115,7 +145,7 @@ export class SupabaseStorageService {
       return urls;
     } catch (error) {
       this.logger.error('Error al subir múltiples imágenes:', error);
-      throw new Error('Error al subir algunas imágenes');
+      throw new Error(`Error al subir imágenes: ${error.message}`);
     }
   }
 
@@ -141,6 +171,53 @@ export class SupabaseStorageService {
   }
 
   /**
+   * Sube imágenes de propuesta de trabajo específicamente
+   */
+  async uploadProposalImages(base64Images: string[], proposalId: number): Promise<string[]> {
+    // Asegurar que el bucket job-proposals existe
+    await this.ensureBucketExists('job-proposals');
+    return this.uploadMultipleImagesFromBase64(base64Images, `proposal-${proposalId}`, 'job-proposals');
+  }
+
+  /**
+   * Sube una imagen de propuesta de trabajo específicamente
+   */
+  async uploadProposalImage(base64Data: string, proposalId: number, imageIndex: number = 0): Promise<string> {
+    // Asegurar que el bucket job-proposals existe
+    await this.ensureBucketExists('job-proposals');
+    return this.uploadImageFromBase64(base64Data, `proposal-${proposalId}-${imageIndex}`, 'job-proposals');
+  }
+
+  /**
+   * Asegura que un bucket existe, si no existe lo crea
+   */
+  async ensureBucketExists(bucketName: string): Promise<void> {
+    try {
+      const { data: buckets, error: listError } = await this.supabase.storage.listBuckets();
+      
+      if (listError) {
+        this.logger.error('Error al listar buckets:', listError);
+        throw new Error(`Error al verificar buckets: ${listError.message}`);
+      }
+
+      const bucketExists = buckets.find(b => b.name === bucketName);
+      if (bucketExists) {
+        this.logger.log(`Bucket '${bucketName}' ya existe`);
+        return;
+      }
+
+      // Crear el bucket si no existe
+      this.logger.log(`Creando bucket '${bucketName}'...`);
+      const bucketData = await this.createBucketWithServiceKey(bucketName, true);
+      this.logger.log(`Bucket '${bucketName}' creado exitosamente`);
+      
+    } catch (error) {
+      this.logger.error(`Error asegurando bucket '${bucketName}':`, error);
+      throw new Error(`Error al crear bucket '${bucketName}': ${error.message}`);
+    }
+  }
+
+  /**
    * Elimina una imagen de Supabase Storage
    */
   async deleteImage(filePath: string, bucket: string = 'user-images'): Promise<boolean> {
@@ -158,6 +235,38 @@ export class SupabaseStorageService {
       return true;
     } catch (error) {
       this.logger.error('Error en deleteImage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Elimina imágenes de propuesta de trabajo específicamente
+   */
+  async deleteProposalImages(imageUrls: string[]): Promise<boolean> {
+    try {
+      if (!imageUrls || imageUrls.length === 0) {
+        return true;
+      }
+
+      // Extraer nombres de archivo de las URLs
+      const filePaths = imageUrls.map(url => {
+        const urlParts = url.split('/');
+        return urlParts[urlParts.length - 1];
+      });
+
+      const { error } = await this.supabase.storage
+        .from('job-proposals')
+        .remove(filePaths);
+
+      if (error) {
+        this.logger.error('Error al eliminar imágenes de propuesta:', error);
+        return false;
+      }
+
+      this.logger.log(`${filePaths.length} imágenes de propuesta eliminadas`);
+      return true;
+    } catch (error) {
+      this.logger.error('Error en deleteProposalImages:', error);
       return false;
     }
   }

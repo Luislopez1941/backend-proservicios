@@ -23,6 +23,16 @@ export class MessagesController {
     return this.messagesService.findAll();
   }
 
+  @Get('get-chat/:issuerId/:receiverId')
+  async getChat(@Param('issuerId') issuerId: string, @Param('receiverId') receiverId: string) {
+    return this.messagesService.getChat(+issuerId, +receiverId);
+  }
+
+  @Get('get-chat-by-user/:chatId/:userId')
+  async getChatByUser(@Param('chatId') chatId: string, @Param('userId') userId: string) {
+    return this.messagesService.getChatByUser(+chatId, +userId);
+  } 
+
   @Get('by-chat/:chatId')
   async findByChat(@Param('chatId') chatId: string) {
     return this.messagesService.findByChat(+chatId);

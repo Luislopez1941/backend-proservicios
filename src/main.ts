@@ -6,7 +6,13 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 import { Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+  });
+
+  // Configurar límite de tamaño del payload (10MB)
+  app.use(require('express').json({ limit: '10mb' }));
+  app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
 
   // Configurar validación global
   app.useGlobalPipes(new ValidationPipe({

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SearchCustomersDto } from './dto/search-customers.dto';
+import { SearchCustomersPostDto } from './dto/search-customers-post.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { GoogleMapsService } from '../google-maps/google-maps.service';
 import { AddressValidationService } from '../validation/address-validation.service';
@@ -302,6 +303,11 @@ export class UserService {
       // Preparar los datos para actualizar el usuario
       const { profilePhoto, background, workPhotos, id: userId, type, ...userData } = updateUserDto;
 
+      // Log para debuggear profesiones
+      if (updateUserDto.professions) {
+        console.log('🔧 Actualizando profesiones:', JSON.stringify(updateUserDto.professions, null, 2));
+      }
+
       // Si se está actualizando la contraseña, encriptarla
       let updateData = { ...userData };
       if (updateUserDto.password) {
@@ -334,6 +340,7 @@ export class UserService {
           profilePhoto: true,
           background: true,
           workPhotos: true,
+          professions: true,
           location_address: true,
           location_lat: true,
           location_lng: true,
@@ -467,33 +474,6 @@ export class UserService {
     return `This action removes a #${id} user`;
   }
 
-  async debugUser(id: number) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id }
-      });
-
-      if (!user) {
-        return {
-          status: 'warning',
-          message: 'Usuario no encontrado'
-        };
-      }
-
-      return {
-        status: 'success',
-        message: 'Usuario encontrado (debug)',
-        data: user
-      };
-    } catch (error) {
-      console.error('Error en debugUser:', error);
-      return {
-        status: 'error',
-        message: 'Error al obtener el usuario'
-      };
-    }
-  }
-
   async rawUser(id: number) {
     try {
       const user = await this.prisma.user.findUnique({
@@ -519,36 +499,7 @@ export class UserService {
     }
   }
 
-  async testImageUpload(base64Image: string) {
-    try {
-      console.log('Test de subida de imagen iniciado');
-      console.log('Base64 length:', base64Image.length);
-      console.log('Base64 preview:', base64Image.substring(0, 50) + '...');
-      
-      const url = await this.supabaseStorage.uploadImageFromBase64(
-        base64Image,
-        'test-image',
-        'profile-photos'
-      );
-      
-      console.log('Imagen subida exitosamente:', url);
-      
-      return {
-        status: 'success',
-        message: 'Imagen subida exitosamente',
-        data: {
-          url,
-          fileName: 'test-image.jpg'
-        }
-      };
-    } catch (error) {
-      console.error('Error en testImageUpload:', error);
-      return {
-        status: 'error',
-        message: `Error al subir imagen: ${error.message}`
-      };
-    }
-  }
+
 
   /**
    * Construye una dirección completa usando el país del usuario
@@ -584,5 +535,120 @@ export class UserService {
     console.log('Dirección construida:', fullAddress);
     
     return fullAddress;
+  }
+
+  async searchCustomersPost(searchParams: SearchCustomersPostDto): Promise<UserResponseDto> {
+    try {
+      const { type, type_service, type_location, page = 1 } = searchParams;
+      const pageSize = 10; // Aumentamos el tamaño de página para POST
+      const offset = (page - 1) * pageSize;
+
+      console.log('Datos recibidos en servicio POST:', searchParams);
+
+      let whereCondition: any = {};
+
+      // Filtrar por tipo de usuario si es necesario
+      if (type === 'get-user') {
+        // Buscar trabajadores (profesionales)
+        whereCondition.type_user = 'worker';
+      }
+
+      // Agregar condición para profesiones si existe type_service (comentado temporalmente)
+      // if (type_service) {
+      //   // Usar consulta SQL raw para buscar en el JSON
+      //   whereCondition.professions = {
+      //     not: null
+      //   };
+      // }
+
+      // Filtrar por ubicación usando place_id o descripción
+      if (type_location?.place_id) {
+        // Buscar por place_id exacto o por descripción que contenga "Cancún"
+        whereCondition.OR = [
+          { location_place_id: type_location.place_id },
+          { location_address: { contains: 'Cancún' } }
+        ];
+      }
+
+      console.log('Condición de búsqueda POST:', whereCondition);
+
+      // Consulta normal con todos los filtros
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where: whereCondition,
+          skip: offset,
+          take: pageSize,
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            first_name: true,
+            second_name: true,
+            first_surname: true,
+            second_last_name: true,
+            email: true,
+            phone: true,
+            description: true,
+            type_user: true,
+            verified: true,
+            reviewsCount: true,
+            rating: true,
+            professions: true,
+            workPhotos: true,
+            location_address: true,
+            location_lat: true,
+            location_lng: true,
+            location_place_id: true,
+            profilePhoto: true
+          }
+        }),
+        this.prisma.user.count({
+          where: whereCondition
+        })
+      ]);
+
+      // Filtrar por profesiones en JavaScript si es necesario
+      let filteredUsers = users;
+      if (type_service) {
+        // type_service es el id de la profesión directamente
+        filteredUsers = users.filter(user => {
+          if (!user.professions || !Array.isArray(user.professions)) {
+            return false;
+          }
+          return user.professions.some(prof => 
+            prof && typeof prof === 'object' && (prof as any).id === type_service
+          );
+        });
+      }
+
+      console.log(`Encontrados ${filteredUsers.length} usuarios de ${total} total`);
+
+      return {
+        status: 'success',
+        message: `Se encontraron ${filteredUsers.length} profesionales`,
+        data: {
+          users: filteredUsers,
+          pagination: {
+            page,
+            pageSize,
+            total: filteredUsers.length,
+            totalPages: Math.ceil(filteredUsers.length / pageSize)
+          },
+          searchParams: {
+            type,
+            type_service,
+            location: type_location,
+            page
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('Error en búsqueda POST:', error);
+      return {
+        status: 'error',
+        message: 'Error al buscar profesionales',
+        data: null
+      };
+    }
   }
 }

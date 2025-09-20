@@ -42,13 +42,12 @@ export class UpdateUserDto {
 
   @ApiProperty({ 
     description: 'Profesiones del usuario', 
-    example: ['Electricista', 'Plomero'],
+    example: [{id: 3, name: "Electricista", category: "Técnico"}],
     required: false
   })
   @IsArray({ message: 'Las profesiones deben ser un array' })
-  @IsString({ each: true, message: 'Cada profesión debe ser una cadena de texto' })
   @IsOptional()
-  professions?: string[];
+  professions?: any[];
 
   @ApiProperty({ 
     description: 'Nombre del usuario', 

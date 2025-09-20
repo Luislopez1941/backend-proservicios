@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SearchCustomersDto } from './dto/search-customers.dto';
+import { SearchCustomersPostDto } from './dto/search-customers-post.dto';
 import { GoogleMapsService } from '../google-maps/google-maps.service';
 import { AddressValidationService } from '../validation/address-validation.service';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -41,6 +42,14 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Resultados de búsqueda', type: UserResponseDto })
   async searchCustomers(@Query(ValidationPipe) searchParams: SearchCustomersDto): Promise<UserResponseDto> {
     return this.userService.searchCustomers(searchParams);
+  }
+
+  @Post('search')
+  @ApiOperation({ summary: 'Buscar clientes (POST)', description: 'Busca clientes por diferentes criterios usando POST con FormData' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Resultados de búsqueda', type: UserResponseDto })
+  async searchCustomersPost(@Body(ValidationPipe) searchParams: SearchCustomersPostDto): Promise<UserResponseDto> {
+    return this.userService.searchCustomersPost(searchParams);
   }
 
   @Get('get-user/:type/:id')
@@ -248,11 +257,7 @@ export class UserController {
     }
   }
 
-  @Get('debug/:id')
-  @ApiOperation({ summary: 'Debug usuario', description: 'Obtiene todos los campos del usuario para debug' })
-  async debugUser(@Param('id') id: string) {
-    return this.userService.debugUser(+id);
-  }
+ 
 
   @Get('raw/:id')
   @ApiOperation({ summary: 'Usuario raw', description: 'Obtiene el usuario sin procesar para debug' })
@@ -260,21 +265,5 @@ export class UserController {
     return this.userService.rawUser(+id);
   }
 
-  @Post('test-image-upload')
-  @ApiOperation({ summary: 'Test imagen', description: 'Prueba la subida de imagen' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        base64Image: { 
-          type: 'string', 
-          example: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...' 
-        }
-      },
-      required: ['base64Image']
-    }
-  })
-  async testImageUpload(@Body() body: { base64Image: string }) {
-    return this.userService.testImageUpload(body.base64Image);
-  }
+  
 }

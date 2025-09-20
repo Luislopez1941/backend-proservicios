@@ -32,7 +32,8 @@ async function createSupabaseBuckets() {
     const bucketsToCreate = [
       { name: 'profile-photos', description: 'Fotos de perfil de usuarios' },
       { name: 'background-images', description: 'Imágenes de fondo de usuarios' },
-      { name: 'work-photos', description: 'Fotos de trabajos realizados' }
+      { name: 'work-photos', description: 'Fotos de trabajos realizados' },
+      { name: 'job-proposals', description: 'Imágenes de propuestas de trabajo' }
     ];
 
     for (const bucketConfig of bucketsToCreate) {

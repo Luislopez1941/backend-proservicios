@@ -183,7 +183,7 @@ export class CreateUserDto {
 
   @ApiProperty({ 
     description: 'Array de profesiones del usuario', 
-    example: ['Plomería', 'Electricidad'], 
+    example: [{id: 3, name: "Electricista", category: "Técnico"}], 
     required: false 
   })
   @IsArray({ message: 'Las profesiones deben ser un array' })

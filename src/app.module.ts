@@ -11,6 +11,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { GoogleMapsModule } from './apis/google-maps/google-maps.module';
 import { ValidationModule } from './apis/validation/validation.module';
 import { StorageModule } from './apis/storage/storage.module';
+import { SocketModule } from './apis/socket/socket.module';
+import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { StorageModule } from './apis/storage/storage.module';
     GoogleMapsModule,
     SearchModule,
     ValidationModule,
-    StorageModule
+    StorageModule,
+    SocketModule,
+    JobProposalModule
   ],
   controllers: [AppController],
   providers: [AppService],
