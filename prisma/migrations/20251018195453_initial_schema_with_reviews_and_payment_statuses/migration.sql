@@ -14,7 +14,7 @@ CREATE TYPE "public"."ChatType" AS ENUM ('private', 'group');
 CREATE TYPE "public"."MessageType" AS ENUM ('normal', 'proposal');
 
 -- CreateEnum
-CREATE TYPE "public"."ProposalStatus" AS ENUM ('active', 'canceled', 'accepted');
+CREATE TYPE "public"."ProposalStatus" AS ENUM ('active', 'canceled', 'accepted', 'finished_work', 'completed_work', 'payment_completed', 'payment_pending', 'payment_failed', 'payment_refunded', 'payment_expired', 'payment_cancelled');
 
 -- CreateTable
 CREATE TABLE "public"."users" (
@@ -35,9 +35,21 @@ CREATE TABLE "public"."users" (
     "professions" JSONB,
     "starts" JSONB,
     "verified" BOOLEAN NOT NULL DEFAULT false,
+    "birthdate" TIMESTAMP(3),
+    "completed_works" INTEGER NOT NULL DEFAULT 0,
+    "paid_jobs" INTEGER NOT NULL DEFAULT 0,
+    "finished_works" INTEGER NOT NULL DEFAULT 0,
+    "income_month" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_year" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_total" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_month_last" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_year_last" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_total_last" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_month_last_year" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_year_last_year" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "income_total_last_year" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "reviewsCount" INTEGER NOT NULL DEFAULT 0,
     "rating" DOUBLE PRECISION NOT NULL DEFAULT 5.0,
-    "birthdate" TIMESTAMP(3),
     "dni" VARCHAR(50),
     "type_user" "public"."UserType",
     "location_address" TEXT,
@@ -138,6 +150,20 @@ CREATE TABLE "public"."jobproposals" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."reviews" (
+    "id" SERIAL NOT NULL,
+    "reviewer_id" INTEGER NOT NULL,
+    "reviewed_id" INTEGER NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "job_id" INTEGER,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "reviews_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."locations" (
     "id" SERIAL NOT NULL,
     "id_location" INTEGER NOT NULL,
@@ -155,6 +181,9 @@ CREATE UNIQUE INDEX "professions_name_key" ON "public"."professions"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "jobproposals_message_id_key" ON "public"."jobproposals"("message_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "reviews_reviewer_id_reviewed_id_job_id_key" ON "public"."reviews"("reviewer_id", "reviewed_id", "job_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "locations_id_location_type_key" ON "public"."locations"("id_location", "type");
@@ -182,3 +211,9 @@ ALTER TABLE "public"."jobproposals" ADD CONSTRAINT "jobproposals_message_id_fkey
 
 -- AddForeignKey
 ALTER TABLE "public"."jobproposals" ADD CONSTRAINT "jobproposals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_reviewed_id_fkey" FOREIGN KEY ("reviewed_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -184,35 +184,7 @@ export class UserService {
       return {
         status: 'success',
         message: 'Usuario encontrado',
-        data: {
-          id: user.id,
-          first_name: user.first_name,
-          second_name: user.second_name ?? null,
-          first_surname: user.first_surname,
-          second_last_name: user.second_last_name ?? null,
-          country: user.country ?? null,
-          email: user.email,
-          password: user.password,
-          profilePhoto: user.profilePhoto ?? null,
-          background: user.background ?? null,
-          workPhotos: user.workPhotos ?? null,
-          phone: user.phone,
-          description: user.description ?? null,
-          gender: user.gender ?? null,
-          professions: user.professions ?? null,
-          starts: user.starts ?? null,
-          verified: user.verified,
-          reviewsCount: user.reviewsCount,
-          rating: user.rating,
-          birthdate: user.birthdate ?? null,
-          dni: user.dni ?? null,
-          type_user: user.type_user ?? null,
-          location_address: user.location_address ?? null,
-          location_lat: user.location_lat ?? null,
-          location_lng: user.location_lng ?? null,
-          location_place_id: user.location_place_id ?? null,
-          location_bounds: user.location_bounds ?? null,
-        }
+        data: user
       };
     } catch (error) {
       console.error('Error en getUserById:', error);
@@ -477,7 +449,18 @@ export class UserService {
   async rawUser(id: number) {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          // Incluir todas las relaciones para obtener el esquema completo
+          jobs: true,
+          sentMessages: true,
+          receivedMessages: true,
+          user1Chats: true,
+          user2Chats: true,
+          proposals: true,
+          reviewsGiven: true,
+          reviewsReceived: true,
+        }
       });
 
       if (!user) {
@@ -487,9 +470,13 @@ export class UserService {
         };
       }
 
-      // Devolver el objeto tal como viene de la base de datos
-      console.log('Usuario raw de la DB:', JSON.stringify(user, null, 2));
-      return user;
+      // Devolver el objeto tal como viene de la base de datos con todas las relaciones
+      console.log('Usuario raw completo de la DB:', JSON.stringify(user, null, 2));
+      return {
+        status: 'success',
+        message: 'Usuario raw encontrado',
+        data: user
+      };
     } catch (error) {
       console.error('Error en rawUser:', error);
       return {
