@@ -336,7 +336,7 @@ export class CompleteUserDto {
   @IsOptional()
   type_user?: UserType;
 
-  // Campos de ubicación Google Maps
+  // Campos de ubicación Google Maps (compatibilidad)
   @ApiProperty({ 
     description: 'Dirección completa de la ubicación', 
     example: 'Av. Tulum 456, Centro, Cancún, Q.R., México', 
@@ -380,4 +380,59 @@ export class CompleteUserDto {
   })
   @IsOptional()
   location_bounds?: any;
+
+  // Campos de ubicación estructurada
+  @ApiProperty({ 
+    description: 'Calle y número de la dirección', 
+    example: 'Av. Tulum 456', 
+    required: false 
+  })
+  @IsString({ message: 'La calle debe ser una cadena de texto' })
+  @IsOptional()
+  location_street?: string;
+
+  @ApiProperty({ 
+    description: 'Colonia o barrio', 
+    example: 'Centro', 
+    required: false 
+  })
+  @IsString({ message: 'La colonia debe ser una cadena de texto' })
+  @IsOptional()
+  location_colony?: string;
+
+  @ApiProperty({ 
+    description: 'Ciudad o municipio', 
+    example: 'Cancún', 
+    required: false 
+  })
+  @IsString({ message: 'La ciudad debe ser una cadena de texto' })
+  @IsOptional()
+  location_city?: string;
+
+  @ApiProperty({ 
+    description: 'Estado o provincia', 
+    example: 'Quintana Roo', 
+    required: false 
+  })
+  @IsString({ message: 'El estado debe ser una cadena de texto' })
+  @IsOptional()
+  location_state?: string;
+
+  @ApiProperty({ 
+    description: 'Código postal', 
+    example: '77500', 
+    required: false 
+  })
+  @IsString({ message: 'El código postal debe ser una cadena de texto' })
+  @IsOptional()
+  location_postal_code?: string;
+
+  @ApiProperty({ 
+    description: 'País', 
+    example: 'México', 
+    required: false 
+  })
+  @IsString({ message: 'El país debe ser una cadena de texto' })
+  @IsOptional()
+  location_country?: string;
 }

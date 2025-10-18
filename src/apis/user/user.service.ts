@@ -8,6 +8,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { GoogleMapsService } from '../google-maps/google-maps.service';
 import { AddressValidationService } from '../validation/address-validation.service';
 import { SupabaseStorageService } from '../storage/supabase-storage.service';
+import { StructuredLocationDto } from './dto/structured-location.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -47,7 +48,8 @@ export class UserService {
       const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
 
       // Validar y geocodificar la ubicación usando Google Maps
-      let locationData;
+      let locationData: any;
+      let structuredLocation: StructuredLocationDto | null = null;
       try {
         // Validación robusta de la dirección
         const validationResult = this.addressValidation.validateAddressInput(createUserDto.location.address);
@@ -95,6 +97,10 @@ export class UserService {
           };
         }
 
+        // Parsear la ubicación estructurada
+        structuredLocation = this.parseStructuredLocation(locationData.address, createUserDto.location);
+        console.log('📍 Ubicación estructurada parseada:', JSON.stringify(structuredLocation, null, 2));
+
       } catch (error) {
         console.error('Error en validación de dirección:', error);
         
@@ -120,17 +126,37 @@ export class UserService {
       // Preparar los datos para crear el usuario
       const { location, professions, acceptTerms, ...userData } = createUserDto;
 
+      // Validar que tenemos los datos de ubicación necesarios
+      console.log('🔍 Validando datos de ubicación:');
+      console.log('  - locationData:', !!locationData);
+      console.log('  - structuredLocation:', !!structuredLocation);
+      
+      if (!locationData || !structuredLocation) {
+        console.error('❌ Datos de ubicación faltantes:', { locationData: !!locationData, structuredLocation: !!structuredLocation });
+        return {
+          status: 'error',
+          message: 'Error al procesar la ubicación del usuario'
+        };
+      }
+
       // Crear el usuario
       const user = await this.prisma.user.create({
         data: {
           ...userData,
           password: hashedPassword,
-          // Datos de ubicación de Google Maps
+          // Datos de ubicación de Google Maps (compatibilidad)
           location_address: locationData.address,
           location_lat: locationData.coordinates.lat,
           location_lng: locationData.coordinates.lng,
           location_place_id: locationData.place_id,
           location_bounds: locationData.bounds,
+          // Datos de ubicación estructurada
+          location_street: (structuredLocation as StructuredLocationDto).street,
+          location_colony: (structuredLocation as StructuredLocationDto).colony,
+          location_city: (structuredLocation as StructuredLocationDto).city,
+          location_state: (structuredLocation as StructuredLocationDto).state,
+          location_postal_code: (structuredLocation as StructuredLocationDto).postal_code,
+          location_country: (structuredLocation as StructuredLocationDto).country,
           // Guardar professions como JSON
           ...(professions && { professions: professions }),
         },
@@ -181,10 +207,28 @@ export class UserService {
       // Log para debug
       console.log('Usuario completo de la DB:', JSON.stringify(user, null, 2));
       
+      // Crear objeto de ubicación estructurada
+      const structuredLocation = {
+        street: user.location_street,
+        colony: user.location_colony,
+        city: user.location_city,
+        state: user.location_state,
+        postal_code: user.location_postal_code,
+        country: user.location_country,
+        full_address: user.location_address,
+        lat: user.location_lat,
+        lng: user.location_lng,
+        place_id: user.location_place_id,
+        bounds: user.location_bounds
+      };
+
       return {
         status: 'success',
         message: 'Usuario encontrado',
-        data: user
+        data: {
+          ...user,
+          structured_location: structuredLocation
+        }
       };
     } catch (error) {
       console.error('Error en getUserById:', error);
@@ -487,6 +531,23 @@ export class UserService {
   }
 
 
+
+  /**
+   * Parsea una dirección completa en componentes estructurados
+   */
+  private parseStructuredLocation(address: string, location: any): StructuredLocationDto {
+    const parts = address.split(',').map(part => part.trim());
+    
+    return {
+      street: parts[0] || undefined, // Primera parte: calle y número
+      colony: parts[1] || undefined, // Segunda parte: colonia
+      city: location.municipio || parts[2] || undefined, // Ciudad/municipio
+      state: location.estado || parts[3] || undefined, // Estado
+      postal_code: location.codigo_postal || undefined, // Código postal
+      country: location.pais || 'México', // País
+      full_address: address, // Dirección completa para compatibilidad
+    };
+  }
 
   /**
    * Construye una dirección completa usando el país del usuario
