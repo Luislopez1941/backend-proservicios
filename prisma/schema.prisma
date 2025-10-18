@@ -91,7 +91,7 @@ model User {
 
   //////////////////////Raiting///////////////////////////
   reviewsCount Int   @default(0)
-  rating       Float @default(5.0)
+  rating       Float @default(0.0)
 
   dni       String?   @db.VarChar(50)
   type_user UserType?
@@ -224,6 +224,11 @@ model JobProposal {
   status      ProposalStatus @default(active)
   created_at  DateTime       @default(now())
   updated_at  DateTime       @default(now())
+
+  //////////////////////Precio Total///////////////////////////
+  price_total            Int?    // Precio total en centavos (ej: 150000 = $1500.00)
+  currency               String? @default("MXN") @db.VarChar(3) // Código de moneda (MXN, USD, EUR, etc.)
+  accepts_payment_methods Json?   // Métodos de pago aceptados
 
   // Relaciones
   message Message @relation(fields: [message_id], references: [id])
