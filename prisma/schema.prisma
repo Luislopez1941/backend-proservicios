@@ -42,110 +42,139 @@ enum ProposalStatus {
   active
   canceled
   accepted
+  finished_work
+  completed_work
+  payment_completed
+  payment_pending
+  payment_failed
+  payment_refunded
+  payment_expired
+  payment_cancelled
 }
 
 // Models
 model User {
-  id                Int      @id @default(autoincrement())
-  first_name        String   @db.VarChar(255)
-  second_name       String?  @db.VarChar(255)
-  first_surname     String   @db.VarChar(255)
-  second_last_name  String?  @db.VarChar(255)
-  country           String?  @db.VarChar(255)
-  email             String   @unique @db.VarChar(255)
-  password          String   @db.VarChar(255)
-  profilePhoto      String?  @db.Text
-  background        String?  @db.Text
-  workPhotos        Json?
-  phone             String   @db.VarChar(255)
-  description       String?  @default("") @db.Text
-  gender            String?  @db.VarChar(50)
-  professions       Json?
-  starts            Json?
-  verified          Boolean  @default(false)
-  reviewsCount      Int      @default(0)
-  rating            Float    @default(5.0)
-  birthdate         DateTime?
-  dni               String?  @db.VarChar(50)
-  type_user         UserType?
-  
+  id               Int     @id @default(autoincrement())
+  first_name       String  @db.VarChar(255)
+  second_name      String? @db.VarChar(255)
+  first_surname    String  @db.VarChar(255)
+  second_last_name String? @db.VarChar(255)
+  country          String? @db.VarChar(255)
+  email            String  @unique @db.VarChar(255)
+  password         String  @db.VarChar(255)
+  profilePhoto     String? @db.Text
+  background       String? @db.Text
+  workPhotos       Json?
+  phone            String  @db.VarChar(255)
+  description      String? @default("") @db.Text
+  gender           String? @db.VarChar(50)
+  professions      Json?
+  starts           Json?
+  verified         Boolean @default(false)
+
+  birthdate       DateTime?
+  completed_works Int       @default(0)
+  paid_jobs       Int       @default(0)
+  finished_works  Int       @default(0)
+
+
+  //////////////////////Facturacion///////////////////////////
+  income_month           Float @default(0.0)
+  income_year            Float @default(0.0)
+  income_total           Float @default(0.0)
+  income_month_last      Float @default(0.0)
+  income_year_last       Float @default(0.0)
+  income_total_last      Float @default(0.0)
+  income_month_last_year Float @default(0.0)
+  income_year_last_year  Float @default(0.0)
+  income_total_last_year Float @default(0.0)
+
+  //////////////////////Raiting///////////////////////////
+  reviewsCount Int   @default(0)
+  rating       Float @default(5.0)
+
+  dni       String?   @db.VarChar(50)
+  type_user UserType?
+
   // Google Maps Location Data
-  location_address    String?  @db.Text
-  location_lat        Float?
-  location_lng        Float?
-  location_place_id   String?  @db.VarChar(255)
-  location_bounds     Json?
-  
+  location_address  String? @db.Text
+  location_lat      Float?
+  location_lng      Float?
+  location_place_id String? @db.VarChar(255)
+  location_bounds   Json?
+
   // Relaciones inversas
-  jobs              Job[]
-  sentMessages      Message[] @relation("MessageSender")
-  receivedMessages  Message[] @relation("MessageReceiver")
-  user1Chats        Chat[] @relation("ChatIssuer")
-  user2Chats        Chat[] @relation("ChatReceiver")
-  proposals         JobProposal[]
-  
+  jobs             Job[]
+  sentMessages     Message[]     @relation("MessageSender")
+  receivedMessages Message[]     @relation("MessageReceiver")
+  user1Chats       Chat[]        @relation("ChatIssuer")
+  user2Chats       Chat[]        @relation("ChatReceiver")
+  proposals        JobProposal[]
+  reviewsGiven     Review[]      @relation("ReviewGiver")
+  reviewsReceived  Review[]      @relation("ReviewReceiver")
+
   @@map("users")
 }
 
 model Job {
-  id              Int      @id @default(autoincrement())
-  id_user         Int
-  title           String   @db.VarChar(255)
-  description     String   @db.Text
-  category        String   @db.VarChar(255)
-  budget          Json
-  location        String   @db.VarChar(255)
-  urgency         JobUrgency @default(normal)
-  status          JobStatus @default(open)
-  professions     Json
-  images          Json?
-  price           String   @db.VarChar(255)
-  proposalsCount  Int      @default(0)
-  postedTime      DateTime @default(now())
-  viewsCount      Int      @default(0)
-  requirements    Json?
-  timeline        String?  @db.VarChar(255)
-  workType        String?  @db.VarChar(255)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @default(now())
-  
+  id          Int        @id @default(autoincrement())
+  id_user     Int
+  title       String     @db.VarChar(255)
+  description String     @db.Text
+  category    String     @db.VarChar(255)
+  budget      Json
+  location    String     @db.VarChar(255)
+  urgency     JobUrgency @default(normal)
+  status      JobStatus  @default(open)
+  professions Json
+  images      Json?
+
+  price          String   @db.VarChar(255)
+  proposalsCount Int      @default(0)
+  postedTime     DateTime @default(now())
+  viewsCount     Int      @default(0)
+  requirements   Json?
+  timeline       String?  @db.VarChar(255)
+  workType       String?  @db.VarChar(255)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
   // Google Maps Location Data
-  location_address    String?  @db.Text
-  location_lat        Float?
-  location_lng        Float?
-  location_place_id   String?  @db.VarChar(255)
-  location_bounds     Json?
-  
+  location_address  String? @db.Text
+  location_lat      Float?
+  location_lng      Float?
+  location_place_id String? @db.VarChar(255)
+  location_bounds   Json?
+
   // Relaciones
-  user            User     @relation(fields: [id_user], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
   @@map("jobs")
 }
-
 
 model Profession {
   id   Int    @id @default(autoincrement())
   name String @unique
-  
+
   @@map("professions")
 }
 
 model Chat {
-  id            Int      @id @default(autoincrement())
-  chat_type     ChatType
-  created_at    DateTime @default(now())
-  issuer_id     Int
-  receiver_id   Int
-  message_text  Json
-  updated_at    DateTime @default(now())
-  
+  id           Int      @id @default(autoincrement())
+  chat_type    ChatType
+  created_at   DateTime @default(now())
+  issuer_id    Int
+  receiver_id  Int
+  message_text Json
+  updated_at   DateTime @default(now())
+
   // Relaciones
-  issuer        User     @relation("ChatIssuer", fields: [issuer_id], references: [id])
-  receiver      User     @relation("ChatReceiver", fields: [receiver_id], references: [id])
-  
+  issuer   User @relation("ChatIssuer", fields: [issuer_id], references: [id])
+  receiver User @relation("ChatReceiver", fields: [receiver_id], references: [id])
+
   // Relaciones inversas
-  messages      Message[]
-  
+  messages Message[]
+
   @@map("chats")
 }
 
@@ -163,36 +192,54 @@ model Message {
   last_message_sender String
   message_status      String
   is_online           Boolean     @default(true)
-  
+
   // Relaciones
-  issuer              User        @relation("MessageSender", fields: [issuer_id], references: [id])
-  receiver            User        @relation("MessageReceiver", fields: [receiver_id], references: [id])
-  chat                Chat        @relation(fields: [chat_id], references: [id], onDelete: Cascade)
-  
+  issuer   User @relation("MessageSender", fields: [issuer_id], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiver_id], references: [id])
+  chat     Chat @relation(fields: [chat_id], references: [id], onDelete: Cascade)
+
   // Relaciones inversas
-  proposal            JobProposal?
-  
+  proposal JobProposal?
+
   @@map("messages")
 }
 
 model JobProposal {
-  id           Int            @id @default(autoincrement())
-  message_id   Int            @unique
-  user_id      Int
-  issuer_id    Int
-  receiver_id  Int
-  title        String
-  description  String?         @db.Text
-  images       Json?
-  status       ProposalStatus  @default(active)
-  created_at   DateTime        @default(now())
-  updated_at   DateTime        @default(now())
-  
+  id          Int            @id @default(autoincrement())
+  message_id  Int            @unique
+  user_id     Int
+  issuer_id   Int
+  receiver_id Int
+  title       String
+  description String?        @db.Text
+  images      Json?
+  status      ProposalStatus @default(active)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @default(now())
+
   // Relaciones
-  message      Message         @relation(fields: [message_id], references: [id])
-  user         User            @relation(fields: [user_id], references: [id])
-  
+  message Message @relation(fields: [message_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+
   @@map("jobproposals")
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  reviewer_id Int      // Usuario que da la reseña
+  reviewed_id Int      // Usuario que recibe la reseña
+  rating      Int      // Calificación de 1 a 5
+  comment     String?  @db.Text // Comentario opcional
+  job_id      Int?     // ID del trabajo relacionado (opcional)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+
+  // Relaciones
+  reviewer User @relation("ReviewGiver", fields: [reviewer_id], references: [id], onDelete: Cascade)
+  reviewed User @relation("ReviewReceiver", fields: [reviewed_id], references: [id], onDelete: Cascade)
+
+  @@unique([reviewer_id, reviewed_id, job_id], name: "unique_review_per_job")
+  @@map("reviews")
 }
 
 model Location {
@@ -200,7 +247,7 @@ model Location {
   id_location Int
   name        String @db.VarChar(255)
   type        String @db.VarChar(50)
-  
+
   @@unique([id_location, type], name: "id_location_type")
   @@map("locations")
 }

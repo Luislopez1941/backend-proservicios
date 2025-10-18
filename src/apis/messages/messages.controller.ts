@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ValidationPipe, Put } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
+import { UpdateMessageStatusDto } from './dto/update-message-status.dto';
 
 @Controller('messages')
 export class MessagesController {
@@ -53,8 +54,19 @@ export class MessagesController {
     return this.messagesService.update(+id, updateMessageDto);
   }
 
+  @Patch('status/:id')
+  async updateStatus(@Param('id') id: string, @Body(ValidationPipe) updateStatusDto: UpdateMessageStatusDto) {
+    return this.messagesService.updateStatus(+id, updateStatusDto);
+  }
+
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.messagesService.remove(+id);
+  }
+
+  @Post('fix-orphaned-proposals')
+  async fixOrphanedProposals() {
+    return this.messagesService.fixOrphanedProposalMessages();
   }
 }
