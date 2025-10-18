@@ -530,6 +530,81 @@ export class UserService {
     }
   }
 
+  /**
+   * Corrige la ubicación estructurada de un usuario existente
+   */
+  async fixStructuredLocation(id: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id }
+      });
+
+      if (!user) {
+        return {
+          status: 'warning',
+          message: 'Usuario no encontrado'
+        };
+      }
+
+      if (!user.location_address) {
+        return {
+          status: 'warning',
+          message: 'El usuario no tiene dirección registrada'
+        };
+      }
+
+      // Crear un objeto location simulado para usar con parseStructuredLocation
+      const mockLocation = {
+        municipio: user.location_city,
+        estado: user.location_state,
+        codigo_postal: user.location_postal_code,
+        pais: user.location_country
+      };
+
+      // Parsear la ubicación con la función mejorada
+      const structuredLocation = this.parseStructuredLocation(user.location_address, mockLocation);
+
+      // Actualizar el usuario con la ubicación corregida
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: {
+          location_street: structuredLocation.street,
+          location_colony: structuredLocation.colony,
+          location_city: structuredLocation.city,
+          location_state: structuredLocation.state,
+          location_postal_code: structuredLocation.postal_code,
+          location_country: structuredLocation.country,
+        }
+      });
+
+      console.log('✅ Ubicación estructurada corregida para usuario:', id);
+      console.log('📍 Nueva ubicación:', JSON.stringify(structuredLocation, null, 2));
+
+      return {
+        status: 'success',
+        message: 'Ubicación estructurada corregida exitosamente',
+        data: {
+          user_id: id,
+          old_location: {
+            street: user.location_street,
+            colony: user.location_colony,
+            city: user.location_city,
+            state: user.location_state,
+            postal_code: user.location_postal_code,
+            country: user.location_country
+          },
+          new_location: structuredLocation
+        }
+      };
+    } catch (error) {
+      console.error('Error en fixStructuredLocation:', error);
+      return {
+        status: 'error',
+        message: 'Error al corregir la ubicación estructurada'
+      };
+    }
+  }
+
 
 
   /**
@@ -538,12 +613,49 @@ export class UserService {
   private parseStructuredLocation(address: string, location: any): StructuredLocationDto {
     const parts = address.split(',').map(part => part.trim());
     
+    // Función para extraer código postal de una cadena
+    const extractPostalCode = (text: string): string | undefined => {
+      const postalMatch = text.match(/\b\d{5}\b/);
+      return postalMatch ? postalMatch[0] : undefined;
+    };
+
+    // Función para limpiar texto de código postal
+    const cleanFromPostalCode = (text: string): string => {
+      return text.replace(/\b\d{5}\b/g, '').trim();
+    };
+
+    // Determinar colonia (segunda parte sin código postal)
+    let colony = parts[1] || undefined;
+    if (colony) {
+      colony = cleanFromPostalCode(colony);
+      if (colony === '') colony = undefined;
+    }
+
+    // Determinar código postal (buscar en todas las partes)
+    let postalCode = location.codigo_postal || undefined;
+    if (!postalCode) {
+      for (const part of parts) {
+        const found = extractPostalCode(part);
+        if (found) {
+          postalCode = found;
+          break;
+        }
+      }
+    }
+
+    // Determinar ciudad (municipio del usuario o tercera parte limpia)
+    let city = location.municipio || undefined;
+    if (!city && parts[2]) {
+      city = cleanFromPostalCode(parts[2]);
+      if (city === '') city = undefined;
+    }
+
     return {
       street: parts[0] || undefined, // Primera parte: calle y número
-      colony: parts[1] || undefined, // Segunda parte: colonia
-      city: location.municipio || parts[2] || undefined, // Ciudad/municipio
+      colony: colony, // Segunda parte: colonia (sin código postal)
+      city: city, // Ciudad/municipio
       state: location.estado || parts[3] || undefined, // Estado
-      postal_code: location.codigo_postal || undefined, // Código postal
+      postal_code: postalCode, // Código postal extraído
       country: location.pais || 'México', // País
       full_address: address, // Dirección completa para compatibilidad
     };

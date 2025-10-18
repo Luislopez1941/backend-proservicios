@@ -265,5 +265,14 @@ export class UserController {
     return this.userService.rawUser(+id);
   }
 
+  @Post('fix-location/:id')
+  @ApiOperation({ summary: 'Corregir ubicación estructurada', description: 'Actualiza la ubicación estructurada de un usuario existente' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Ubicación corregida exitosamente' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async fixStructuredLocation(@Param('id') id: string) {
+    return this.userService.fixStructuredLocation(+id);
+  }
+
   
 }
