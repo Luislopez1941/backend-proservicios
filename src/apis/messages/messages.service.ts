@@ -642,8 +642,6 @@ export class MessagesService {
 
       // Debug: Verificar si el mensaje tiene propuesta asociada
       if (message && message.type_message === 'proposal') {
-        console.log(`🔍 Debug - Mensaje ${id} es de tipo proposal`);
-        console.log(`🔍 Debug - Proposal data:`, message.proposal);
         
         // Verificar directamente en la base de datos
         const proposalCheck = await this.prisma.jobProposal.findUnique({
@@ -661,7 +659,6 @@ export class MessagesService {
             }
           }
         });
-        console.log(`🔍 Debug - Propuesta encontrada directamente:`, proposalCheck);
       }
 
       if (!message) {
@@ -805,10 +802,7 @@ export class MessagesService {
         }
       });
 
-      console.log(`🔧 Encontrados ${orphanedMessages.length} mensajes huérfanos de tipo proposal`);
-
       for (const message of orphanedMessages) {
-        console.log(`🔧 Procesando mensaje huérfano ID: ${message.id}`);
         
         // Crear una propuesta básica para este mensaje
         const proposal = await this.prisma.jobProposal.create({
@@ -835,7 +829,6 @@ export class MessagesService {
           }
         });
 
-        console.log(`✅ Propuesta creada para mensaje ${message.id}:`, proposal.id);
       }
 
       return {
@@ -925,7 +918,6 @@ export class MessagesService {
               WHERE id = ${existingMessage.issuer_id}
             `;
 
-            console.log(`✅ Trabajo completado - Receptor (${existingMessage.receiver_id}): +1 completed_works, Emisor (${existingMessage.issuer_id}): +1 paid_jobs`);
           }
         }
       }

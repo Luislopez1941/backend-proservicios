@@ -51,9 +51,6 @@ export class JobProposalService {
             message_text: {}
           }
         });
-        console.log('Chat creado:', chat.id);
-      } else {
-        console.log('Chat existente encontrado:', chat.id);
       }
 
       // Crear el mensaje en el chat
@@ -81,7 +78,10 @@ export class JobProposalService {
           title: createJobProposalDto.title,
           description: createJobProposalDto.description,
           images: {}, // Inicialmente vacío
-          status: createJobProposalDto.status || 'active'
+          status: createJobProposalDto.status || 'active',
+          price_total: createJobProposalDto.price_total,
+          currency: createJobProposalDto.currency,
+          accepts_payment_methods: createJobProposalDto.accepts_payment_methods
         },
         include: {
           message: {
@@ -125,12 +125,10 @@ export class JobProposalService {
       let imageUrls: string[] = [];
       if (createJobProposalDto.images && Array.isArray(createJobProposalDto.images)) {
         try {
-          console.log('Procesando imágenes para propuesta:', jobProposal.id);
           imageUrls = await this.supabaseStorage.uploadProposalImages(
             createJobProposalDto.images,
             jobProposal.id
           );
-          console.log('Imágenes subidas exitosamente:', imageUrls);
 
           // Actualizar la propuesta con las URLs de las imágenes
           const updatedProposal = await this.prisma.jobProposal.update({
@@ -184,7 +182,6 @@ export class JobProposalService {
           // Si hay error con las imágenes, eliminar la propuesta creada
           try {
             await this.prisma.jobProposal.delete({ where: { id: jobProposal.id } });
-            console.log('Propuesta eliminada debido a error en imágenes');
           } catch (deleteError) {
             console.error('Error al eliminar propuesta:', deleteError);
           }
@@ -213,7 +210,6 @@ export class JobProposalService {
   }
 
   async updateProposalStatus(proposalId: number, status: string) {
-    console.log('updateProposalStatus', proposalId, status);
     try {
       const updatedProposal = await this.prisma.jobProposal.update({
         where: { id: proposalId },
@@ -276,8 +272,6 @@ export class JobProposalService {
 
   async getUserProposals(userId: number) {
     try {
-      console.log('🔍 Buscando propuestas para usuario:', userId);
-      
       const proposals = await this.prisma.jobProposal.findMany({
         where: {
           OR: [
@@ -324,16 +318,6 @@ export class JobProposalService {
         orderBy: { created_at: 'desc' }
       });
 
-      console.log('📊 Propuestas encontradas:', proposals.length);
-      console.log('📋 Detalles de propuestas:', proposals.map(p => ({
-        id: p.id,
-        title: p.title,
-        issuer_id: p.issuer_id,
-        receiver_id: p.receiver_id,
-        status: p.status,
-        created_at: p.created_at
-      })));
-
       return {
         status: 'success',
         message: `Se encontraron ${proposals.length} propuestas`,
@@ -351,8 +335,6 @@ export class JobProposalService {
 
   async getAllProposalsDebug() {
     try {
-      console.log('🔍 DEBUG: Obteniendo TODAS las propuestas de la base de datos...');
-      
       const allProposals = await this.prisma.jobProposal.findMany({
         select: {
           id: true,
@@ -366,9 +348,6 @@ export class JobProposalService {
         },
         orderBy: { created_at: 'desc' }
       });
-
-      console.log('📊 TOTAL de propuestas en BD:', allProposals.length);
-      console.log('📋 TODAS las propuestas:', allProposals);
 
       return {
         status: 'success',
@@ -532,8 +511,6 @@ export class JobProposalService {
       // Procesar imágenes si están presentes en la actualización
       if (updateJobProposalDto.images && Array.isArray(updateJobProposalDto.images)) {
         try {
-          console.log('Actualizando imágenes para propuesta:', id);
-          
           // Eliminar imágenes anteriores si existen
           if (currentProposal.images && Array.isArray(currentProposal.images)) {
             await this.supabaseStorage.deleteProposalImages(currentProposal.images as string[]);
@@ -546,7 +523,6 @@ export class JobProposalService {
           );
           
           updateData.images = imageUrls;
-          console.log('Imágenes actualizadas exitosamente:', imageUrls);
         } catch (imageError) {
           console.error('Error al actualizar imágenes:', imageError);
           return {
@@ -714,7 +690,6 @@ export class JobProposalService {
       if (proposal.images && Array.isArray(proposal.images)) {
         try {
           await this.supabaseStorage.deleteProposalImages(proposal.images as string[]);
-          console.log('Imágenes de propuesta eliminadas de Supabase Storage');
         } catch (imageError) {
           console.error('Error al eliminar imágenes de Supabase:', imageError);
           // Continuar con la eliminación de la propuesta aunque falle la eliminación de imágenes

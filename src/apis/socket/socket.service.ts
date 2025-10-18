@@ -190,17 +190,8 @@ export class SocketService {
 
   async sendNewMessage(messageData: any) {
     try {
-      // Logging básico para debugging
-      console.log('📨 Enviando mensaje:', messageData.message);
-      
       // Validar que los campos requeridos estén presentes
       if (!messageData.issuer_id || !messageData.receiver_id || !messageData.chat_id || !messageData.message) {
-        console.log('❌ Faltan campos requeridos:', {
-          issuer_id: messageData.issuer_id,
-          receiver_id: messageData.receiver_id,
-          chat_id: messageData.chat_id,
-          message: messageData.message
-        });
         return {
           status: 'error',
           message: 'Faltan campos requeridos: issuer_id, receiver_id, chat_id, message',

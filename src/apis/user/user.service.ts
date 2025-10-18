@@ -18,9 +18,7 @@ export class UserService {
     private googleMaps: GoogleMapsService,
     private addressValidation: AddressValidationService,
     private supabaseStorage: SupabaseStorageService
-  ) {
-    console.log('UserService constructor - SupabaseStorageService inyectado:', !!this.supabaseStorage);
-  }
+  ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
@@ -99,7 +97,6 @@ export class UserService {
 
         // Parsear la ubicación estructurada
         structuredLocation = this.parseStructuredLocation(locationData.address, createUserDto.location);
-        console.log('📍 Ubicación estructurada parseada:', JSON.stringify(structuredLocation, null, 2));
 
       } catch (error) {
         console.error('Error en validación de dirección:', error);
@@ -127,10 +124,6 @@ export class UserService {
       const { location, professions, acceptTerms, ...userData } = createUserDto;
 
       // Validar que tenemos los datos de ubicación necesarios
-      console.log('🔍 Validando datos de ubicación:');
-      console.log('  - locationData:', !!locationData);
-      console.log('  - structuredLocation:', !!structuredLocation);
-      
       if (!locationData || !structuredLocation) {
         console.error('❌ Datos de ubicación faltantes:', { locationData: !!locationData, structuredLocation: !!structuredLocation });
         return {
@@ -204,9 +197,6 @@ export class UserService {
         };
       }
 
-      // Log para debug
-      console.log('Usuario completo de la DB:', JSON.stringify(user, null, 2));
-      
       // Crear objeto de ubicación estructurada
       const structuredLocation = {
         street: user.location_street,
@@ -259,15 +249,10 @@ export class UserService {
             // Procesar foto de perfil
             if (updateUserDto.profilePhoto && updateUserDto.profilePhoto.trim() !== '') {
               try {
-                console.log('Procesando foto de perfil para usuario:', id);
-                console.log('Base64 length:', updateUserDto.profilePhoto.length);
-                console.log('Base64 preview:', updateUserDto.profilePhoto.substring(0, 50) + '...');
-                
                 const profilePhotoUrl = await this.supabaseStorage.uploadProfilePhoto(
                   updateUserDto.profilePhoto,
                   id
                 );
-                console.log('Foto de perfil subida exitosamente:', profilePhotoUrl);
                 imageUpdates.profilePhoto = profilePhotoUrl;
               } catch (error) {
                 console.error('Error detallado al procesar foto de perfil:', error);
@@ -319,10 +304,6 @@ export class UserService {
       // Preparar los datos para actualizar el usuario
       const { profilePhoto, background, workPhotos, id: userId, type, ...userData } = updateUserDto;
 
-      // Log para debuggear profesiones
-      if (updateUserDto.professions) {
-        console.log('🔧 Actualizando profesiones:', JSON.stringify(updateUserDto.professions, null, 2));
-      }
 
       // Si se está actualizando la contraseña, encriptarla
       let updateData = { ...userData };
@@ -384,13 +365,7 @@ export class UserService {
       const pageSize = 2;
       const offset = (page - 1) * pageSize;
 
-      console.log('Datos recibidos en servicio:', searchParams);
-
       let whereCondition: any = {};
-
-      // Por ahora no aplicamos filtros de ubicación específicos
-      // En el futuro se pueden implementar filtros por coordenadas o place_id
-      console.log('Condición de búsqueda:', whereCondition);
 
       // Agregar condición para profesiones si existe type_service
       if (type_service) {
@@ -399,8 +374,6 @@ export class UserService {
           array_contains: type_service
         };
       }
-
-      console.log('Consulta final:', whereCondition);
 
       const [users, total] = await Promise.all([
         this.prisma.user.findMany({
@@ -433,9 +406,6 @@ export class UserService {
           where: whereCondition
         })
       ]);
-
-      console.log('Usuarios encontrados:', users.length);
-      console.log('Total de registros:', total);
 
       const totalPages = Math.ceil(total / pageSize);
       const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -515,7 +485,6 @@ export class UserService {
       }
 
       // Devolver el objeto tal como viene de la base de datos con todas las relaciones
-      console.log('Usuario raw completo de la DB:', JSON.stringify(user, null, 2));
       return {
         status: 'success',
         message: 'Usuario raw encontrado',
@@ -576,9 +545,6 @@ export class UserService {
           location_country: structuredLocation.country,
         }
       });
-
-      console.log('✅ Ubicación estructurada corregida para usuario:', id);
-      console.log('📍 Nueva ubicación:', JSON.stringify(structuredLocation, null, 2));
 
       return {
         status: 'success',
@@ -691,9 +657,6 @@ export class UserService {
     
     const fullAddress = parts.join(', ');
     
-    // Log para debugging
-    console.log('Dirección construida:', fullAddress);
-    
     return fullAddress;
   }
 
@@ -702,8 +665,6 @@ export class UserService {
       const { type, type_service, type_location, page = 1 } = searchParams;
       const pageSize = 10; // Aumentamos el tamaño de página para POST
       const offset = (page - 1) * pageSize;
-
-      console.log('Datos recibidos en servicio POST:', searchParams);
 
       let whereCondition: any = {};
 
@@ -729,8 +690,6 @@ export class UserService {
           { location_address: { contains: 'Cancún' } }
         ];
       }
-
-      console.log('Condición de búsqueda POST:', whereCondition);
 
       // Consulta normal con todos los filtros
       const [users, total] = await Promise.all([
@@ -779,8 +738,6 @@ export class UserService {
           );
         });
       }
-
-      console.log(`Encontrados ${filteredUsers.length} usuarios de ${total} total`);
 
       return {
         status: 'success',

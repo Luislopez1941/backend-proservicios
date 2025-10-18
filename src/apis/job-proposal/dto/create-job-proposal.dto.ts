@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsEnum, IsArray } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsEnum, IsArray, Min } from 'class-validator';
 
 export class CreateJobProposalDto {
   @IsInt({ message: 'El user_id debe ser un número entero' })
@@ -27,6 +27,21 @@ export class CreateJobProposalDto {
     message: 'El estado debe ser: active, canceled, o accepted' 
   })
   status?: 'active' | 'canceled' | 'accepted';
+
+  // Campos de precio
+  @IsOptional()
+  @IsInt({ message: 'El precio total debe ser un número entero' })
+  @Min(0, { message: 'El precio total no puede ser negativo' })
+  price_total?: number;
+
+  @IsOptional()
+  @IsString({ message: 'La moneda debe ser una cadena de texto' })
+  currency?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Los métodos de pago deben ser un array' })
+  @IsString({ each: true, message: 'Cada método de pago debe ser una cadena de texto' })
+  accepts_payment_methods?: string[];
 
   // Campos opcionales que el frontend puede enviar pero que ignoramos
   @IsOptional()
