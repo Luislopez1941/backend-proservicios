@@ -23,10 +23,10 @@ export class CreateJobProposalDto {
   images?: string[];
 
   @IsOptional()
-  @IsEnum(['active', 'canceled', 'accepted'], { 
-    message: 'El estado debe ser: active, canceled, o accepted' 
+  @IsEnum(['active', 'canceled', 'accepted', 'finished_work', 'completed_work', 'payment_completed', 'confirmed_payment', 'payment_pending', 'payment_failed', 'payment_refunded', 'payment_expired', 'payment_cancelled'], { 
+    message: 'El estado debe ser uno de los valores válidos del enum ProposalStatus' 
   })
-  status?: 'active' | 'canceled' | 'accepted';
+  status?: 'active' | 'canceled' | 'accepted' | 'finished_work' | 'completed_work' | 'payment_completed' | 'confirmed_payment' | 'payment_pending' | 'payment_failed' | 'payment_refunded' | 'payment_expired' | 'payment_cancelled';
 
   // Campos de precio
   @IsOptional()

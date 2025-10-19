@@ -45,6 +45,7 @@ enum ProposalStatus {
   finished_work
   completed_work
   payment_completed
+  confirmed_payment
   payment_pending
   payment_failed
   payment_refunded
