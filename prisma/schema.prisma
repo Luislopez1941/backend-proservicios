@@ -230,6 +230,11 @@ model JobProposal {
   rating_status Boolean      @default(false)
   review_status Boolean      @default(false)
 
+  //////////////////////Precio Total///////////////////////////
+  price_total            Int?    // Precio total en centavos (ej: 150000 = $1500.00)
+  currency               String? @default("MXN") @db.VarChar(3) // Código de moneda (MXN, USD, EUR, etc.)
+  accepts_payment_methods Json?   // Métodos de pago aceptados
+
   // Relaciones
   message Message @relation(fields: [message_id], references: [id])
   user    User    @relation(fields: [user_id], references: [id])
