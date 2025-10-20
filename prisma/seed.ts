@@ -101,61 +101,12 @@ async function seedDatabase() {
       console.log(`Profesión creada: ${profesion}`);
     }
 
-    // Crear usuarios de ejemplo con ubicaciones de Google Maps
-    console.log('👥 Creando usuarios específicos...');
-
-    // Usuario 1: Luis López
-    await prisma.user.upsert({
-      where: { email: 'Luis@gmail.com' },
-      update: {},
-      create: {
-        first_name: 'Luis',
-        first_surname: 'López',
-        email: 'Luis@gmail.com',
-        password: 'Luis2001',
-        phone: '+52 55 1234 5678',
-        type_user: 'client',
-        location_address: 'Av. Reforma 123, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX, México',
-        location_lat: 19.4326,
-        location_lng: -99.1332,
-        location_place_id: 'ChIJdd4hrwug2EcRmSrV3Vo6llI',
-        location_bounds: {
-          northeast: { lat: 19.4336, lng: -99.1322 },
-          southwest: { lat: 19.4316, lng: -99.1342 }
-        }
-      }
-    });
-    console.log('Usuario creado: Luis López');
-
-    // Usuario 2: Esteban López
-    await prisma.user.upsert({
-      where: { email: 'Esteban@gmail.com' },
-      update: {},
-      create: {
-        first_name: 'Esteban',
-        first_surname: 'López',
-        email: 'Esteban@gmail.com',
-        password: 'Luis2001',
-        phone: '+52 55 9876 5432',
-        type_user: 'worker',
-        description: 'Profesional con experiencia',
-        professions: ['Albañil', 'Plomero'],
-        location_address: 'Calle 60 #123, Centro, 97000 Mérida, Yuc., México',
-        location_lat: 20.9674,
-        location_lng: -89.5926,
-        location_place_id: 'ChIJ8VQyqQqG1o8RqJzQzQzQzQzQ',
-        location_bounds: {
-          northeast: { lat: 20.9684, lng: -89.5916 },
-          southwest: { lat: 20.9664, lng: -89.5936 }
-        }
-      }
-    });
-    console.log('Usuario creado: Esteban López');
+    // No crear usuarios - solo profesiones
 
     console.log('🎉 ¡Base de datos poblada exitosamente!');
     console.log('📊 Resumen:');
     console.log(`   - ${profesiones.length} profesiones creadas`);
-    console.log('   - 2 usuarios específicos creados');
+    console.log('   - 0 usuarios creados');
     console.log('   - Ubicaciones configuradas con Google Maps');
 
   } catch (error) {
