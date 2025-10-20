@@ -880,7 +880,7 @@ export class MessagesService {
         // Actualizar el status de la propuesta usando SQL raw con manejo de errores
         try {
           await this.prisma.$executeRaw`
-            UPDATE jobproposals 
+            UPDATE "JobProposal" 
             SET status = ${updateStatusDto.proposal_status}::"ProposalStatus"
             WHERE message_id = ${id}
           `;
@@ -891,7 +891,7 @@ export class MessagesService {
               ALTER TYPE "ProposalStatus" ADD VALUE IF NOT EXISTS ${updateStatusDto.proposal_status}
             `;
             await this.prisma.$executeRaw`
-              UPDATE jobproposals 
+              UPDATE "JobProposal" 
               SET status = ${updateStatusDto.proposal_status}::"ProposalStatus"
               WHERE message_id = ${id}
             `;
