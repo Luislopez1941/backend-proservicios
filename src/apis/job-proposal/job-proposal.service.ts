@@ -296,7 +296,7 @@ export class JobProposalService {
             rating_status: true
           }
         });
-        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}`);
+        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating enviado: ${rating}`);
       }
 
       // Solo actualizar el status si NO es rating_status
