@@ -229,6 +229,7 @@ model JobProposal {
   updated_at  DateTime       @default(now())
   rating_status Boolean      @default(false)
   review_status Boolean      @default(false)
+  rating        Int?         // Calificación de 1 a 5
 
   //////////////////////Precio Total///////////////////////////
   price_total            Int?    // Precio total en centavos (ej: 150000 = $1500.00)

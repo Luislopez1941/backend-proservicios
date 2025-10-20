@@ -285,21 +285,21 @@ export class JobProposalService {
         });
         console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
 
-        // Actualizar el rating_status de la propuesta (rating temporalmente comentado)
+        // Actualizar el rating_status y rating de la propuesta
         const updatedProposal = await this.prisma.jobProposal.update({
           where: { id: proposalId },
           data: {
-            rating_status: true
-            // rating: rating  // Temporalmente comentado hasta que se aplique en producción
+            rating_status: true,
+            rating: rating  // Guardar el rating exacto que se envió
           } as any,
           select: {
             id: true,
-            rating_status: true
-            // rating: true  // Temporalmente comentado
+            rating_status: true,
+            rating: true
           } as any
         });
-        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating enviado: ${rating}`);
-        console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} recibió rating ${rating}`);
+        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${(updatedProposal as any).rating}`);
+        console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${(updatedProposal as any).rating}`);
       }
 
       // Solo actualizar el status si NO es rating_status
@@ -393,7 +393,7 @@ export class JobProposalService {
           updated_at: true,
           rating_status: true,
           review_status: true,
-          // rating: true,  // Temporalmente comentado hasta que se aplique en producción
+          rating: true,  // Campo rating restaurado
           price_total: true,
           currency: true,
           accepts_payment_methods: true,
