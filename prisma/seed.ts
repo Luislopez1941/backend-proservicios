@@ -102,17 +102,17 @@ async function seedDatabase() {
     }
 
     // Crear usuarios de ejemplo con ubicaciones de Google Maps
-    console.log('👥 Creando usuarios de ejemplo...');
+    console.log('👥 Creando usuarios específicos...');
 
-    // Usuario 1: Cliente en Ciudad de México
+    // Usuario 1: Luis López
     await prisma.user.upsert({
-      where: { email: 'cliente1@example.com' },
+      where: { email: 'Luis@gmail.com' },
       update: {},
       create: {
-        first_name: 'Juan',
-        first_surname: 'Pérez',
-        email: 'cliente1@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+        first_name: 'Luis',
+        first_surname: 'López',
+        email: 'Luis@gmail.com',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // Luis2001
         phone: '+52 55 1234 5678',
         type_user: 'client',
         location_address: 'Av. Reforma 123, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX, México',
@@ -125,21 +125,21 @@ async function seedDatabase() {
         }
       }
     });
-    console.log('Cliente creado: Juan Pérez');
+    console.log('Usuario creado: Luis López');
 
-    // Usuario 2: Profesional en Mérida
+    // Usuario 2: Esteban López
     await prisma.user.upsert({
-      where: { email: 'profesional1@example.com' },
+      where: { email: 'Esteban@gmail.com' },
       update: {},
       create: {
-        first_name: 'María',
-        first_surname: 'García',
-        email: 'profesional1@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-        phone: '+52 999 123 4567',
+        first_name: 'Esteban',
+        first_surname: 'López',
+        email: 'Esteban@gmail.com',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // Luis2001
+        phone: '+52 55 9876 5432',
         type_user: 'worker',
-        description: 'Plomera con 5 años de experiencia',
-        professions: ['Plomero'],
+        description: 'Profesional con experiencia',
+        professions: ['Albañil', 'Plomero'],
         location_address: 'Calle 60 #123, Centro, 97000 Mérida, Yuc., México',
         location_lat: 20.9674,
         location_lng: -89.5926,
@@ -150,37 +150,12 @@ async function seedDatabase() {
         }
       }
     });
-    console.log('Profesional creado: María García');
-
-    // Usuario 3: Profesional en Cancún
-    await prisma.user.upsert({
-      where: { email: 'profesional2@example.com' },
-      update: {},
-      create: {
-        first_name: 'Carlos',
-        first_surname: 'López',
-        email: 'profesional2@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-        phone: '+52 998 765 4321',
-        type_user: 'worker',
-        description: 'Electricista certificado',
-        professions: ['Electricista'],
-        location_address: 'Av. Tulum 456, Centro, 77500 Cancún, Q.R., México',
-        location_lat: 21.1619,
-        location_lng: -86.8515,
-        location_place_id: 'ChIJ8VQyqQqG1o8RqJzQzQzQzQzQ',
-        location_bounds: {
-          northeast: { lat: 21.1629, lng: -86.8505 },
-          southwest: { lat: 21.1609, lng: -86.8525 }
-        }
-      }
-    });
-    console.log('Profesional creado: Carlos López');
+    console.log('Usuario creado: Esteban López');
 
     console.log('🎉 ¡Base de datos poblada exitosamente!');
     console.log('📊 Resumen:');
     console.log(`   - ${profesiones.length} profesiones creadas`);
-    console.log('   - 3 usuarios de ejemplo creados');
+    console.log('   - 2 usuarios específicos creados');
     console.log('   - Ubicaciones configuradas con Google Maps');
 
   } catch (error) {
