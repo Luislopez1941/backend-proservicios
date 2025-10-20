@@ -285,18 +285,20 @@ export class JobProposalService {
         });
         console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
 
-        // Actualizar el rating_status de la propuesta
+        // Actualizar el rating_status y rating de la propuesta
         const updatedProposal = await this.prisma.jobProposal.update({
           where: { id: proposalId },
           data: {
-            rating_status: true
-          },
+            rating_status: true,
+            rating: rating  // Guardar el rating exacto que se envió
+          } as any,
           select: {
             id: true,
-            rating_status: true
-          }
+            rating_status: true,
+            rating: true
+          } as any
         });
-        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating enviado: ${rating}`);
+        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${(updatedProposal as any).rating}`);
       }
 
       // Solo actualizar el status si NO es rating_status
