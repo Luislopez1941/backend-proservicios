@@ -285,21 +285,29 @@ export class JobProposalService {
         });
         console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
 
-        // Actualizar el rating_status y rating de la propuesta
-        const updatedProposal = await this.prisma.jobProposal.update({
+        // Actualizar el rating_status y rating de la propuesta usando SQL directo
+        await this.prisma.$executeRaw`
+          UPDATE "JobProposal" 
+          SET rating_status = true, rating = ${rating}
+          WHERE id = ${proposalId}
+        `;
+        
+        // Verificar que se actualizó correctamente
+        const updatedProposal = await this.prisma.jobProposal.findUnique({
           where: { id: proposalId },
-          data: {
-            rating_status: true,
-            rating: rating  // Guardar el rating exacto que se envió
-          } as any,
           select: {
             id: true,
             rating_status: true,
             rating: true
-          } as any
+          }
         });
-        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${(updatedProposal as any).rating}`);
-        console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${(updatedProposal as any).rating}`);
+        
+        if (updatedProposal) {
+          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${updatedProposal.rating}`);
+          console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${updatedProposal.rating}`);
+        } else {
+          console.log(`❌ Error: No se pudo encontrar la propuesta ${proposalId} después de la actualización`);
+        }
       }
 
       // Solo actualizar el status si NO es rating_status
