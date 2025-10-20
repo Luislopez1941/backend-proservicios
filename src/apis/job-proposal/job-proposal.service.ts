@@ -245,6 +245,8 @@ export class JobProposalService {
       }
 
       if(status === 'rating_status' && rating) {
+        console.log(`🔄 Procesando rating_status para propuesta ${proposalId} con rating ${rating}`);
+        
         // Obtener la propuesta con el receiver_id
         const proposal = await this.prisma.jobProposal.findUnique({
           where: { id: proposalId },
@@ -254,21 +256,36 @@ export class JobProposalService {
         });
 
         if (proposal) {
+          console.log(`📋 Propuesta encontrada - Receiver ID: ${proposal.receiver_id}`);
+          
           // Actualizar el rating del usuario receiver
-          await this.prisma.user.update({
+          const updatedUser = await this.prisma.user.update({
             where: { id: proposal.receiver_id },
             data: {
               rating: rating
+            },
+            select: {
+              id: true,
+              first_name: true,
+              rating: true
             }
           });
+          console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating: ${updatedUser.rating}`);
 
           // Actualizar el rating_status de la propuesta
-          await this.prisma.jobProposal.update({
+          const updatedProposal = await this.prisma.jobProposal.update({
             where: { id: proposalId },
             data: {
               rating_status: true
+            },
+            select: {
+              id: true,
+              rating_status: true
             }
           });
+          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}`);
+        } else {
+          console.log(`❌ No se encontró la propuesta con ID: ${proposalId}`);
         }
       }
 
@@ -322,13 +339,14 @@ export class JobProposalService {
         }
       });
 
+      console.log(`✅ Propuesta ${proposalId} actualizada exitosamente a estado: ${status}`);
       return {
         status: 'success',
         message: `Propuesta actualizada a estado: ${status}`,
         data: updatedProposal
       };
     } catch (error) {
-        console.error(`Error al actualizar propuesta a ${status}:`, error);
+        console.error(`❌ Error al actualizar propuesta ${proposalId} a ${status}:`, error);
       return {
         status: 'error',
         message: `Error al actualizar propuesta a ${status}`,
@@ -336,6 +354,8 @@ export class JobProposalService {
       };
     }
   }
+
+  
 
   async getUserProposals(userId: number) {
     try {
