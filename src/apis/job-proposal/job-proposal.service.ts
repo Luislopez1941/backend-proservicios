@@ -281,27 +281,33 @@ export class JobProposalService {
           console.log(`📝 Nueva reseña creada - ID: ${review.id}, Rating: ${rating}`);
         }
 
-        // Calcular el nuevo promedio automáticamente DESPUÉS de crear/actualizar la reseña
-        const allReviews = await this.prisma.review.findMany({
-          where: { reviewed_id: ratedUserId },
-          select: { rating: true }
+        // Obtener el usuario actual para calcular el nuevo promedio
+        const currentUser = await this.prisma.user.findUnique({
+          where: { id: ratedUserId },
+          select: { rating: true, reviewsCount: true }
         });
 
-        console.log(`📊 Total de reseñas para usuario ${ratedUserId}: ${allReviews.length}`);
-        console.log(`📊 Reseñas encontradas:`, allReviews.map(r => r.rating));
+        if (!currentUser) {
+          throw new Error(`Usuario ${ratedUserId} no encontrado`);
+        }
 
-        const totalRating = allReviews.reduce((sum, review) => sum + review.rating, 0);
-        const averageRating = allReviews.length > 0 ? totalRating / allReviews.length : 0;
-        const roundedRating = Math.round(averageRating * 10) / 10; // Redondear a 1 decimal
+        console.log(`📊 Usuario actual - Rating: ${currentUser.rating}, Reseñas: ${currentUser.reviewsCount}`);
 
-        console.log(`📊 Cálculo: ${totalRating} / ${allReviews.length} = ${averageRating} → Redondeado: ${roundedRating}`);
+        // Calcular el nuevo promedio usando el rating actual del usuario
+        const currentTotal = currentUser.rating * currentUser.reviewsCount;
+        const newTotal = currentTotal + rating;
+        const newReviewsCount = currentUser.reviewsCount + 1;
+        const newAverageRating = newTotal / newReviewsCount;
+        const roundedRating = Math.round(newAverageRating * 10) / 10; // Redondear a 1 decimal
+
+        console.log(`📊 Cálculo: (${currentUser.rating} × ${currentUser.reviewsCount}) + ${rating} = ${newTotal} / ${newReviewsCount} = ${newAverageRating} → Redondeado: ${roundedRating}`);
 
         // Actualizar el rating promedio del usuario que recibe la calificación
         const updatedUser = await this.prisma.user.update({
           where: { id: ratedUserId },
           data: {
             rating: roundedRating,
-            reviewsCount: allReviews.length
+            reviewsCount: newReviewsCount
           },
           select: {
             id: true,
