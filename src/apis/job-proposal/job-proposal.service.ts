@@ -247,17 +247,39 @@ export class JobProposalService {
       if(status === 'rating_status' && rating && raterId && ratedUserId) {
         console.log(`🔄 Procesando rating_status para propuesta ${proposalId} con rating ${rating}, raterId ${raterId}, ratedUserId ${ratedUserId}`);
         
-        // Crear una nueva reseña para calcular el promedio automáticamente
-        const newReview = await this.prisma.review.create({
-          data: {
-            reviewer_id: raterId,      // Quien está calificando
-            reviewed_id: ratedUserId,  // Quien recibe la calificación
-            rating: rating,
-            job_id: proposalId,
-            comment: `Calificación automática del trabajo`
+        // Verificar si ya existe una reseña para esta propuesta
+        const existingReview = await this.prisma.review.findFirst({
+          where: {
+            reviewer_id: raterId,
+            reviewed_id: ratedUserId,
+            job_id: proposalId
           }
         });
-        console.log(`📝 Nueva reseña creada - ID: ${newReview.id}, Rating: ${rating}`);
+
+        let review;
+        if (existingReview) {
+          // Actualizar la reseña existente
+          review = await this.prisma.review.update({
+            where: { id: existingReview.id },
+            data: {
+              rating: rating,
+              comment: `Calificación actualizada del trabajo`
+            }
+          });
+          console.log(`📝 Reseña actualizada - ID: ${review.id}, Rating: ${rating}`);
+        } else {
+          // Crear una nueva reseña
+          review = await this.prisma.review.create({
+            data: {
+              reviewer_id: raterId,      // Quien está calificando
+              reviewed_id: ratedUserId,  // Quien recibe la calificación
+              rating: rating,
+              job_id: proposalId,
+              comment: `Calificación automática del trabajo`
+            }
+          });
+          console.log(`📝 Nueva reseña creada - ID: ${review.id}, Rating: ${rating}`);
+        }
 
         // Calcular el nuevo promedio automáticamente
         const reviews = await this.prisma.review.findMany({
