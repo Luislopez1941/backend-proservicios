@@ -247,6 +247,26 @@ export class JobProposalService {
       if(status === 'rating_status' && rating && raterId && ratedUserId) {
         console.log(`🔄 Procesando rating_status para propuesta ${proposalId} con rating ${rating}, raterId ${raterId}, ratedUserId ${ratedUserId}`);
         
+        // Obtener la propuesta para determinar quién es el cliente y quién el trabajador
+        const proposal = await this.prisma.jobProposal.findUnique({
+          where: { id: proposalId },
+          select: { issuer_id: true, receiver_id: true }
+        });
+
+        if (!proposal) {
+          throw new Error(`Propuesta ${proposalId} no encontrada`);
+        }
+
+        // Determinar si el raterId es el cliente (issuer) o el trabajador (receiver)
+        const isRaterClient = raterId === proposal.issuer_id;
+        const isRaterWorker = raterId === proposal.receiver_id;
+
+        if (!isRaterClient && !isRaterWorker) {
+          throw new Error(`El usuario ${raterId} no está autorizado para calificar esta propuesta`);
+        }
+
+        console.log(`👤 RaterId ${raterId} es ${isRaterClient ? 'CLIENTE (issuer)' : 'TRABAJADOR (receiver)'}`);
+        
         // Verificar si ya existe una reseña para esta propuesta
         const existingReview = await this.prisma.review.findFirst({
           where: {
@@ -318,25 +338,36 @@ export class JobProposalService {
         });
         console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
 
-        // Actualizar el rating_status y rating de la propuesta usando SQL directo
-        await this.prisma.$executeRaw`
-          UPDATE "JobProposal" 
-          SET rating_status = true, rating = ${rating}
-          WHERE id = ${proposalId}
-        `;
+        // Actualizar el rating_status correspondiente según si es cliente o trabajador
+        if (isRaterClient) {
+          await this.prisma.$executeRaw`
+            UPDATE "JobProposal" 
+            SET rating_status_reviwer = true, rating = ${rating}
+            WHERE id = ${proposalId}
+          `;
+          console.log(`✅ Rating status del CLIENTE actualizado para propuesta ${proposalId}`);
+        } else if (isRaterWorker) {
+          await this.prisma.$executeRaw`
+            UPDATE "JobProposal" 
+            SET rating_status_receiver = true, rating = ${rating}
+            WHERE id = ${proposalId}
+          `;
+          console.log(`✅ Rating status del TRABAJADOR actualizado para propuesta ${proposalId}`);
+        }
         
         // Verificar que se actualizó correctamente
         const updatedProposal = await this.prisma.jobProposal.findUnique({
           where: { id: proposalId },
           select: {
             id: true,
-            rating_status: true,
+            rating_status_reviwer: true,
+            rating_status_receiver: true,
             rating: true
-          }
+          } as any
         });
         
         if (updatedProposal) {
-          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${updatedProposal.rating}`);
+          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status Cliente: ${updatedProposal.rating_status_reviwer}, Rating Status Trabajador: ${updatedProposal.rating_status_receiver}, Rating: ${updatedProposal.rating}`);
           console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${updatedProposal.rating}`);
         } else {
           console.log(`❌ Error: No se pudo encontrar la propuesta ${proposalId} después de la actualización`);
@@ -432,8 +463,10 @@ export class JobProposalService {
           status: true,
           created_at: true,
           updated_at: true,
-          rating_status: true,
-          review_status: true,
+          rating_status_reviwer: true,
+          rating_status_receiver: true,
+          review_status_reviewer: true,
+          review_status_receiver: true,
           rating: true,  // Campo rating restaurado
           price_total: true,
           currency: true,
