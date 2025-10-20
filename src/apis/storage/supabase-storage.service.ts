@@ -32,6 +32,11 @@ export class SupabaseStorageService {
     bucket: string = 'profile-photos'
   ): Promise<string> {
     try {
+      // Validar entrada
+      if (!base64Data || typeof base64Data !== 'string') {
+        throw new Error('Datos base64 inválidos o vacíos');
+      }
+
       // Validar que sea base64 válido
       if (!this.isValidBase64Image(base64Data)) {
         throw new Error('Formato de imagen base64 inválido');
@@ -45,7 +50,16 @@ export class SupabaseStorageService {
       const uniqueFileName = `${Date.now()}-${fileName}.${fileExtension}`;
       
       // Convertir base64 a buffer
-      const buffer = this.base64ToBuffer(base64Data);
+      let buffer: Buffer;
+      try {
+        buffer = this.base64ToBuffer(base64Data);
+        if (!buffer || buffer.length === 0) {
+          throw new Error('Error al convertir base64 a buffer');
+        }
+      } catch (bufferError) {
+        this.logger.error('Error al convertir base64 a buffer:', bufferError);
+        throw new Error('Error al procesar los datos de la imagen');
+      }
       
       // Verificar que el bucket existe primero
       this.logger.log(`Verificando bucket: ${bucket}`);
@@ -68,7 +82,7 @@ export class SupabaseStorageService {
       const { data, error } = await this.supabase.storage
         .from(bucket)
         .upload(uniqueFileName, buffer, {
-          contentType: imageType,
+          contentType: `image/${imageType}`,
           upsert: false
         });
 
@@ -83,17 +97,29 @@ export class SupabaseStorageService {
         throw new Error(`Error al subir imagen: ${error.message}`);
       }
 
+      if (!data) {
+        throw new Error('No se recibieron datos de respuesta de Supabase');
+      }
+
       // Obtener URL pública
       const { data: urlData } = this.supabase.storage
         .from(bucket)
         .getPublicUrl(uniqueFileName);
+
+      if (!urlData || !urlData.publicUrl) {
+        throw new Error('No se pudo obtener la URL pública de la imagen');
+      }
 
       this.logger.log(`Imagen subida exitosamente: ${uniqueFileName}`);
       return urlData.publicUrl;
 
     } catch (error) {
       this.logger.error('Error en uploadImageFromBase64:', error);
-      throw new Error('Error al procesar y subir la imagen');
+      // Re-lanzar el error original si ya tiene un mensaje específico
+      if (error.message && !error.message.includes('Error al procesar y subir la imagen')) {
+        throw error;
+      }
+      throw new Error(`Error al procesar y subir la imagen: ${error.message}`);
     }
   }
 
@@ -106,7 +132,29 @@ export class SupabaseStorageService {
     bucket: string = 'profile-photos'
   ): Promise<string[]> {
     if (!base64Images || base64Images.length === 0) {
+      this.logger.log('No hay imágenes para subir');
       return [];
+    }
+
+    // Validar que todas las imágenes son base64 válidas antes de procesar
+    const validImages: string[] = [];
+    const invalidImages: number[] = [];
+    
+    base64Images.forEach((base64, index) => {
+      if (this.isValidBase64Image(base64)) {
+        validImages.push(base64);
+      } else {
+        invalidImages.push(index);
+        this.logger.warn(`Imagen ${index + 1} tiene formato base64 inválido`);
+      }
+    });
+
+    if (invalidImages.length > 0) {
+      this.logger.warn(`${invalidImages.length} imágenes tienen formato inválido y serán omitidas`);
+    }
+
+    if (validImages.length === 0) {
+      throw new Error('No hay imágenes válidas para subir');
     }
 
     // Verificar que el bucket existe primero
@@ -124,29 +172,48 @@ export class SupabaseStorageService {
         throw new Error(`El bucket '${bucket}' no existe. Buckets disponibles: ${buckets.map(b => b.name).join(', ')}`);
       }
 
-      this.logger.log(`Bucket '${bucket}' encontrado, subiendo ${base64Images.length} imágenes...`);
+      this.logger.log(`Bucket '${bucket}' encontrado, subiendo ${validImages.length} imágenes válidas...`);
     } catch (error) {
       this.logger.error('Error verificando bucket:', error);
       throw error;
     }
 
-    const uploadPromises = base64Images.map(async (base64, index) => {
+    // Procesar imágenes con mejor manejo de errores
+    const uploadResults: Array<{ success: boolean; url?: string; error?: string; index: number }> = [];
+    
+    for (let i = 0; i < validImages.length; i++) {
       try {
-        return await this.uploadImageFromBase64(base64, `${fileNamePrefix}-${index}`, bucket);
+        this.logger.log(`Subiendo imagen ${i + 1}/${validImages.length}...`);
+        const url = await this.uploadImageFromBase64(validImages[i], `${fileNamePrefix}-${i}`, bucket);
+        uploadResults.push({ success: true, url, index: i });
+        this.logger.log(`Imagen ${i + 1} subida exitosamente`);
       } catch (error) {
-        this.logger.error(`Error subiendo imagen ${index}:`, error);
-        throw new Error(`Error subiendo imagen ${index + 1}: ${error.message}`);
+        this.logger.error(`Error subiendo imagen ${i + 1}:`, error);
+        uploadResults.push({ 
+          success: false, 
+          error: error.message || 'Error desconocido', 
+          index: i 
+        });
       }
-    });
-
-    try {
-      const urls = await Promise.all(uploadPromises);
-      this.logger.log(`${urls.length} imágenes subidas exitosamente`);
-      return urls;
-    } catch (error) {
-      this.logger.error('Error al subir múltiples imágenes:', error);
-      throw new Error(`Error al subir imágenes: ${error.message}`);
     }
+
+    // Separar resultados exitosos y fallidos
+    const successfulUploads = uploadResults.filter(result => result.success);
+    const failedUploads = uploadResults.filter(result => !result.success);
+
+    if (successfulUploads.length === 0) {
+      throw new Error('No se pudo subir ninguna imagen');
+    }
+
+    if (failedUploads.length > 0) {
+      this.logger.warn(`${failedUploads.length} imágenes fallaron al subir:`, 
+        failedUploads.map(f => `Imagen ${f.index + 1}: ${f.error}`));
+    }
+
+    const urls = successfulUploads.map(result => result.url!);
+    this.logger.log(`${urls.length} imágenes subidas exitosamente de ${validImages.length} intentadas`);
+    
+    return urls;
   }
 
   /**
@@ -275,9 +342,47 @@ export class SupabaseStorageService {
    * Valida si el string es un base64 de imagen válido
    */
   private isValidBase64Image(base64: string): boolean {
-    // Verificar formato base64 de imagen
-    const imageRegex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
-    return imageRegex.test(base64);
+    try {
+      // Verificar que no esté vacío
+      if (!base64 || typeof base64 !== 'string') {
+        return false;
+      }
+
+      // Verificar formato base64 de imagen
+      const imageRegex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
+      if (!imageRegex.test(base64)) {
+        return false;
+      }
+
+      // Extraer solo la parte base64 (sin el prefijo data:image/...;base64,)
+      const base64Data = base64.replace(/^data:image\/[a-z]+;base64,/, '');
+      
+      // Verificar que la parte base64 no esté vacía
+      if (!base64Data || base64Data.length === 0) {
+        return false;
+      }
+
+      // Verificar que sea base64 válido usando una expresión regular más estricta
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      if (!base64Regex.test(base64Data)) {
+        return false;
+      }
+
+      // Verificar que la longitud sea múltiplo de 4 (requisito de base64)
+      if (base64Data.length % 4 !== 0) {
+        return false;
+      }
+
+      // Intentar decodificar para verificar que es válido
+      try {
+        Buffer.from(base64Data, 'base64');
+        return true;
+      } catch (decodeError) {
+        return false;
+      }
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
