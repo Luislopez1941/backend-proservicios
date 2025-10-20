@@ -299,6 +299,7 @@ export class JobProposalService {
           } as any
         });
         console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}, Rating: ${(updatedProposal as any).rating}`);
+        console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${(updatedProposal as any).rating}`);
       }
 
       // Solo actualizar el status si NO es rating_status
