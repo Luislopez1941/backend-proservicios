@@ -227,7 +227,9 @@ model JobProposal {
   status      ProposalStatus @default(active)
   created_at  DateTime       @default(now())
   updated_at  DateTime       @default(now())
-  rating_status Boolean      @default(false)
+  rating_status_reviwer Boolean      @default(false)
+  rating_status_receiver Boolean      @default(false)
+  review_status_reviewer Boolean      @default(false)
   review_status Boolean      @default(false)
   rating        Int?         // Calificación de 1 a 5
 
