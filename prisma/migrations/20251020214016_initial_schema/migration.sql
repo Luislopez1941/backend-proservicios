@@ -139,7 +139,7 @@ CREATE TABLE "public"."messages" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."jobproposals" (
+CREATE TABLE "public"."JobProposal" (
     "id" SERIAL NOT NULL,
     "message_id" INTEGER NOT NULL,
     "user_id" INTEGER NOT NULL,
@@ -151,11 +151,16 @@ CREATE TABLE "public"."jobproposals" (
     "status" "public"."ProposalStatus" NOT NULL DEFAULT 'active',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "rating_status_reviwer" BOOLEAN NOT NULL DEFAULT false,
+    "rating_status_receiver" BOOLEAN NOT NULL DEFAULT false,
+    "review_status_reviewer" BOOLEAN NOT NULL DEFAULT false,
+    "review_status_receiver" BOOLEAN NOT NULL DEFAULT false,
+    "rating" INTEGER,
     "price_total" INTEGER,
     "currency" VARCHAR(3) DEFAULT 'MXN',
     "accepts_payment_methods" JSONB,
 
-    CONSTRAINT "jobproposals_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "JobProposal_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -189,7 +194,7 @@ CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 CREATE UNIQUE INDEX "professions_name_key" ON "public"."professions"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "jobproposals_message_id_key" ON "public"."jobproposals"("message_id");
+CREATE UNIQUE INDEX "JobProposal_message_id_key" ON "public"."JobProposal"("message_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "reviews_reviewer_id_reviewed_id_job_id_key" ON "public"."reviews"("reviewer_id", "reviewed_id", "job_id");
@@ -216,10 +221,10 @@ ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_receiver_id_fkey" FOREI
 ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_chat_id_fkey" FOREIGN KEY ("chat_id") REFERENCES "public"."chats"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."jobproposals" ADD CONSTRAINT "jobproposals_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."JobProposal" ADD CONSTRAINT "JobProposal_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."jobproposals" ADD CONSTRAINT "jobproposals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."JobProposal" ADD CONSTRAINT "JobProposal_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
