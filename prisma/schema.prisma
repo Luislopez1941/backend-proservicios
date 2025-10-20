@@ -230,7 +230,7 @@ model JobProposal {
   rating_status_reviwer Boolean      @default(false)
   rating_status_receiver Boolean      @default(false)
   review_status_reviewer Boolean      @default(false)
-  review_status Boolean      @default(false)
+  review_status_receiver Boolean      @default(false)
   rating        Int?         // Calificación de 1 a 5
 
   //////////////////////Precio Total///////////////////////////
