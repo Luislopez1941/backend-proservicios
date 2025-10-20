@@ -209,7 +209,7 @@ export class JobProposalService {
     }
   }
 
-  async updateProposalStatus(proposalId: number, status: string, rating?: number) {
+  async updateProposalStatus(proposalId: number, status: string, rating?: number, raterId?: number, ratedUserId?: number) {
     try {
       if(status === 'confirmed_payment') {
         // Obtener la propuesta con los IDs de los usuarios
@@ -244,73 +244,59 @@ export class JobProposalService {
         }
       }
 
-      if(status === 'rating_status' && rating) {
-        console.log(`🔄 Procesando rating_status para propuesta ${proposalId} con rating ${rating}`);
+      if(status === 'rating_status' && rating && raterId && ratedUserId) {
+        console.log(`🔄 Procesando rating_status para propuesta ${proposalId} con rating ${rating}, raterId ${raterId}, ratedUserId ${ratedUserId}`);
         
-        // Obtener la propuesta con el receiver_id
-        const proposal = await this.prisma.jobProposal.findUnique({
-          where: { id: proposalId },
-          select: {
-            receiver_id: true
+        // Crear una nueva reseña para calcular el promedio automáticamente
+        const newReview = await this.prisma.review.create({
+          data: {
+            reviewer_id: raterId,      // Quien está calificando
+            reviewed_id: ratedUserId,  // Quien recibe la calificación
+            rating: rating,
+            job_id: proposalId,
+            comment: `Calificación automática del trabajo`
           }
         });
+        console.log(`📝 Nueva reseña creada - ID: ${newReview.id}, Rating: ${rating}`);
 
-        if (proposal) {
-          console.log(`📋 Propuesta encontrada - Receiver ID: ${proposal.receiver_id}`);
-          
-          // Crear una nueva reseña para calcular el promedio automáticamente
-          const newReview = await this.prisma.review.create({
-            data: {
-              reviewer_id: proposal.issuer_id, // Quien está calificando
-              reviewed_id: proposal.receiver_id, // Quien recibe la calificación
-              rating: rating,
-              job_id: proposalId,
-              comment: `Calificación automática del trabajo`
-            }
-          });
-          console.log(`📝 Nueva reseña creada - ID: ${newReview.id}, Rating: ${rating}`);
+        // Calcular el nuevo promedio automáticamente
+        const reviews = await this.prisma.review.findMany({
+          where: { reviewed_id: ratedUserId },
+          select: { rating: true }
+        });
 
-          // Calcular el nuevo promedio automáticamente
-          const reviews = await this.prisma.review.findMany({
-            where: { reviewed_id: proposal.receiver_id },
-            select: { rating: true }
-          });
+        const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+        const averageRating = totalRating / reviews.length;
+        const roundedRating = Math.round(averageRating * 10) / 10; // Redondear a 1 decimal
 
-          const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-          const averageRating = totalRating / reviews.length;
-          const roundedRating = Math.round(averageRating * 10) / 10; // Redondear a 1 decimal
+        // Actualizar el rating promedio del usuario que recibe la calificación
+        const updatedUser = await this.prisma.user.update({
+          where: { id: ratedUserId },
+          data: {
+            rating: roundedRating,
+            reviewsCount: reviews.length
+          },
+          select: {
+            id: true,
+            first_name: true,
+            rating: true,
+            reviewsCount: true
+          }
+        });
+        console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
 
-          // Actualizar el rating promedio del usuario
-          const updatedUser = await this.prisma.user.update({
-            where: { id: proposal.receiver_id },
-            data: {
-              rating: roundedRating,
-              reviewsCount: reviews.length
-            },
-            select: {
-              id: true,
-              first_name: true,
-              rating: true,
-              reviewsCount: true
-            }
-          });
-          console.log(`✅ Usuario actualizado - ID: ${updatedUser.id}, Rating promedio: ${updatedUser.rating}, Total reseñas: ${updatedUser.reviewsCount}`);
-
-          // Actualizar el rating_status de la propuesta
-          const updatedProposal = await this.prisma.jobProposal.update({
-            where: { id: proposalId },
-            data: {
-              rating_status: true
-            },
-            select: {
-              id: true,
-              rating_status: true
-            }
-          });
-          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}`);
-        } else {
-          console.log(`❌ No se encontró la propuesta con ID: ${proposalId}`);
-        }
+        // Actualizar el rating_status de la propuesta
+        const updatedProposal = await this.prisma.jobProposal.update({
+          where: { id: proposalId },
+          data: {
+            rating_status: true
+          },
+          select: {
+            id: true,
+            rating_status: true
+          }
+        });
+        console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status: ${updatedProposal.rating_status}`);
       }
 
       // Solo actualizar el status si NO es rating_status
