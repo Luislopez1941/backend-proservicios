@@ -78,10 +78,7 @@ export class JobProposalService {
           title: createJobProposalDto.title,
           description: createJobProposalDto.description,
           images: {}, // Inicialmente vacío
-          status: createJobProposalDto.status || 'active',
-          price_total: createJobProposalDto.price_total,
-          currency: createJobProposalDto.currency,
-          accepts_payment_methods: createJobProposalDto.accepts_payment_methods
+          status: createJobProposalDto.status || 'active'
         },
         include: {
           message: {

@@ -32,11 +32,6 @@ export class JobProposalController {
     return this.jobProposalService.updateProposalStatus(+id, body.status);
   }
 
-  @Put(':id/review-status')
-  updateReviewStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.jobProposalService.updateProposalStatus(+id, body.status);
-  }
-
   @Put(':id/rating-status')
   updateRatingStatus(@Param('id') id: string, @Body() body: { rating: number }) {
     return this.jobProposalService.updateProposalStatus(+id, 'rating_status', body.rating);
