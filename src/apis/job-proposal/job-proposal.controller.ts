@@ -32,6 +32,22 @@ export class JobProposalController {
     return this.jobProposalService.updateProposalStatus(+id, body.status);
   }
 
+  @Put(':id/review-status')
+  updateReviewStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    return this.jobProposalService.updateProposalStatus(+id, body.status);
+  }
+
+  @Put(':id/rating-status')
+  updateRatingStatus(@Param('id') id: string, @Body() body: { rating: number }) {
+    return this.jobProposalService.updateProposalStatus(+id, 'rating_status', body.rating);
+  }
+
+  @Put(':id/review-status')
+  updateReviewStatus(@Param('id') id: string) {
+    return this.jobProposalService.updateReviewStatus(+id);
+  }
+
+
   @Post(':id/images')
   uploadImages(@Param('id') id: string, @Body() body: { images: string[] }) {
     return this.jobProposalService.uploadImages(+id, body.images);

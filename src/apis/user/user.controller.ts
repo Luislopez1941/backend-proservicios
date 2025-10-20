@@ -265,6 +265,15 @@ export class UserController {
     return this.userService.rawUser(+id);
   }
 
+  @Patch('update-rating/:userId')
+  @ApiOperation({ summary: 'Actualizar calificación', description: 'Actualiza la calificación de un usuario' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Calificación actualizada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async updateRating(@Param('userId') userId: string, @Body() body: { rating: number }) {
+    return this.userService.updateRating(+userId, body.rating);
+  }
+
   @Post('fix-location/:id')
   @ApiOperation({ summary: 'Corregir ubicación estructurada', description: 'Actualiza la ubicación estructurada de un usuario existente' })
   @ApiBearerAuth()

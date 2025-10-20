@@ -209,14 +209,81 @@ export class JobProposalService {
     }
   }
 
-  async updateProposalStatus(proposalId: number, status: string) {
+  async updateProposalStatus(proposalId: number, status: string, rating?: number) {
     try {
+      if(status === 'confirmed_payment') {
+        // Obtener la propuesta con los IDs de los usuarios
+        const proposal = await this.prisma.jobProposal.findUnique({
+          where: { id: proposalId },
+          select: {
+            issuer_id: true,
+            receiver_id: true
+          }
+        });
+
+        if (proposal) {
+          // Actualizar paid_jobs del issuer (quien emitió la propuesta)
+          await this.prisma.user.update({
+            where: { id: proposal.issuer_id },
+            data: {
+              paid_jobs: {
+                increment: 1
+              }
+            }
+          });
+
+          // Actualizar finished_works del receiver (quien recibió la propuesta)
+          await this.prisma.user.update({
+            where: { id: proposal.receiver_id },
+            data: {
+              finished_works: {
+                increment: 1
+              }
+            }
+          });
+        }
+      }
+
+      if(status === 'rating_status' && rating) {
+        // Obtener la propuesta con el receiver_id
+        const proposal = await this.prisma.jobProposal.findUnique({
+          where: { id: proposalId },
+          select: {
+            receiver_id: true
+          }
+        });
+
+        if (proposal) {
+          // Actualizar el rating del usuario receiver
+          await this.prisma.user.update({
+            where: { id: proposal.receiver_id },
+            data: {
+              rating: rating
+            }
+          });
+
+          // Actualizar el rating_status de la propuesta
+          await this.prisma.jobProposal.update({
+            where: { id: proposalId },
+            data: {
+              rating_status: true
+            }
+          });
+        }
+      }
+
+      // Solo actualizar el status si NO es rating_status
+      let updateData: any = {
+        updated_at: new Date()
+      };
+
+      if (status !== 'rating_status') {
+        updateData.status = status as any; // Cast to ProposalStatus enum
+      }
+
       const updatedProposal = await this.prisma.jobProposal.update({
         where: { id: proposalId },
-        data: { 
-          status: status as any, // Cast to ProposalStatus enum
-          updated_at: new Date() 
-        },
+        data: updateData,
         include: {
           message: {
             include: {
@@ -711,6 +778,81 @@ export class JobProposalService {
       return {
         status: 'error',
         message: 'Error al eliminar la propuesta',
+        data: null
+      };
+    }
+  }
+
+  async updateReviewStatus(proposalId: number) {
+    try {
+      // Verificar que la propuesta existe
+      const proposal = await this.prisma.jobProposal.findUnique({
+        where: { id: proposalId }
+      });
+
+      if (!proposal) {
+        return {
+          status: 'error',
+          message: 'Propuesta no encontrada',
+          data: null
+        };
+      }
+
+      // Actualizar solo el review_status a true
+      const updatedProposal = await this.prisma.jobProposal.update({
+        where: { id: proposalId },
+        data: {
+          review_status: true,
+          updated_at: new Date()
+        },
+        include: {
+          message: {
+            include: {
+              issuer: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  email: true,
+                  profilePhoto: true,
+                  type_user: true
+                }
+              },
+              receiver: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  email: true,
+                  profilePhoto: true,
+                  type_user: true
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              email: true,
+              profilePhoto: true,
+              type_user: true
+            }
+          }
+        }
+      });
+
+      return {
+        status: 'success',
+        message: 'Review status actualizado exitosamente',
+        data: updatedProposal
+      };
+    } catch (error) {
+      console.error('Error updating review status:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar el review status',
         data: null
       };
     }

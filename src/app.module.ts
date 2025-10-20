@@ -13,6 +13,7 @@ import { ValidationModule } from './apis/validation/validation.module';
 import { StorageModule } from './apis/storage/storage.module';
 import { SocketModule } from './apis/socket/socket.module';
 import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
+import { ReviewUserModule } from './apis/review-user/review-user.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
     ValidationModule,
     StorageModule,
     SocketModule,
-    JobProposalModule
+    JobProposalModule,
+    ReviewUserModule
   ],
   controllers: [AppController],
   providers: [AppService],

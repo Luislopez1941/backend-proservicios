@@ -768,4 +768,49 @@ export class UserService {
       };
     }
   }
+
+  async updateRating(userId: number, rating: number) {
+    try {
+      // Verificar que el usuario existe
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        return {
+          status: 'error',
+          message: 'Usuario no encontrado',
+          data: null
+        };
+      }
+
+      // Actualizar el rating del usuario
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          rating: rating
+        },
+        select: {
+          id: true,
+          first_name: true,
+          first_surname: true,
+          rating: true,
+          reviewsCount: true
+        }
+      });
+
+      return {
+        status: 'success',
+        message: 'Rating actualizado exitosamente',
+        data: updatedUser
+      };
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar el rating',
+        data: null
+      };
+    }
+  }
 }
