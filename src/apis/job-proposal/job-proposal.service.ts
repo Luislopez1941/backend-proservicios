@@ -926,7 +926,8 @@ export class JobProposalService {
       const updatedProposal = await this.prisma.jobProposal.update({
         where: { id: proposalId },
         data: {
-          review_status: true,
+          review_status_reviewer: true,
+          review_status_receiver: true,
           updated_at: new Date()
         },
         include: {
