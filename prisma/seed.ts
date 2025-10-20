@@ -112,7 +112,7 @@ async function seedDatabase() {
         first_name: 'Luis',
         first_surname: 'López',
         email: 'Luis@gmail.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // Luis2001
+        password: 'Luis2001',
         phone: '+52 55 1234 5678',
         type_user: 'client',
         location_address: 'Av. Reforma 123, Juárez, Cuauhtémoc, 06600 Ciudad de México, CDMX, México',
@@ -135,7 +135,7 @@ async function seedDatabase() {
         first_name: 'Esteban',
         first_surname: 'López',
         email: 'Esteban@gmail.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // Luis2001
+        password: 'Luis2001',
         phone: '+52 55 9876 5432',
         type_user: 'worker',
         description: 'Profesional con experiencia',
