@@ -877,6 +877,40 @@ export class MessagesService {
           };
         }
         
+        // Si es confirmed_payment, actualizar los campos de los usuarios
+        if (updateStatusDto.proposal_status === 'confirmed_payment') {
+          // Obtener la propuesta con los IDs de los usuarios
+          const proposal = await this.prisma.jobProposal.findUnique({
+            where: { message_id: id },
+            select: {
+              issuer_id: true,
+              receiver_id: true
+            }
+          });
+
+          if (proposal) {
+            // Actualizar paid_jobs del issuer (quien emitió la propuesta)
+            await this.prisma.user.update({
+              where: { id: proposal.issuer_id },
+              data: {
+                paid_jobs: {
+                  increment: 1
+                }
+              }
+            });
+
+            // Actualizar finished_works del receiver (quien recibió la propuesta)
+            await this.prisma.user.update({
+              where: { id: proposal.receiver_id },
+              data: {
+                finished_works: {
+                  increment: 1
+                }
+              }
+            });
+          }
+        }
+
         // Actualizar el status de la propuesta usando SQL raw con manejo de errores
         try {
           await this.prisma.$executeRaw`
