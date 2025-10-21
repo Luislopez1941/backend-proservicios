@@ -342,17 +342,17 @@ export class JobProposalService {
         if (isRaterClient) {
           await this.prisma.$executeRaw`
             UPDATE "JobProposal" 
-            SET rating_status_reviwer = true, rating = ${rating}
+            SET rating_status_reviwer = true, rating_reviewer = ${rating}
             WHERE id = ${proposalId}
           `;
-          console.log(`✅ Rating status del CLIENTE actualizado para propuesta ${proposalId}`);
+          console.log(`✅ Rating status del CLIENTE actualizado para propuesta ${proposalId} con rating ${rating}`);
         } else if (isRaterWorker) {
           await this.prisma.$executeRaw`
             UPDATE "JobProposal" 
-            SET rating_status_receiver = true, rating = ${rating}
+            SET rating_status_receiver = true, rating_receiver = ${rating}
             WHERE id = ${proposalId}
           `;
-          console.log(`✅ Rating status del TRABAJADOR actualizado para propuesta ${proposalId}`);
+          console.log(`✅ Rating status del TRABAJADOR actualizado para propuesta ${proposalId} con rating ${rating}`);
         }
         
         // Verificar que se actualizó correctamente
@@ -362,13 +362,15 @@ export class JobProposalService {
             id: true,
             rating_status_reviwer: true,
             rating_status_receiver: true,
-            rating: true
+            rating_reviewer: true,
+            rating_receiver: true
           } as any
         });
         
         if (updatedProposal) {
-          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status Cliente: ${updatedProposal.rating_status_reviwer}, Rating Status Trabajador: ${updatedProposal.rating_status_receiver}, Rating: ${updatedProposal.rating}`);
-          console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating ${updatedProposal.rating}`);
+          console.log(`✅ Propuesta actualizada - ID: ${updatedProposal.id}, Rating Status Cliente: ${updatedProposal.rating_status_reviwer}, Rating Status Trabajador: ${updatedProposal.rating_status_receiver}`);
+          console.log(`📊 Ratings - Cliente: ${updatedProposal.rating_reviewer}, Trabajador: ${updatedProposal.rating_receiver}`);
+          console.log(`🎯 RESUMEN: Usuario ${ratedUserId} ahora tiene rating ${updatedUser.rating}, Propuesta ${proposalId} tiene rating del ${isRaterClient ? 'CLIENTE' : 'TRABAJADOR'}: ${rating}`);
         } else {
           console.log(`❌ Error: No se pudo encontrar la propuesta ${proposalId} después de la actualización`);
         }
@@ -467,7 +469,8 @@ export class JobProposalService {
           rating_status_receiver: true,
           review_status_reviewer: true,
           review_status_receiver: true,
-          rating: true,  // Campo rating restaurado
+          rating_reviewer: true,  // Calificación del cliente
+          rating_receiver: true,  // Calificación del trabajador
           price_total: true,
           currency: true,
           accepts_payment_methods: true,
