@@ -9,22 +9,31 @@ export class ReviewUserService {
 
   async create(createReviewUserDto: CreateReviewUserDto) {
     try {
+      console.log('🔍 DEBUG: Datos recibidos:', createReviewUserDto);
+      
       const { proposalId, proposal_id, reviewer_id, receiver_id, data } = createReviewUserDto;
 
       // Usar proposalId o proposal_id (el que esté definido)
       const actualProposalId = proposalId || proposal_id;
+      
+      console.log('🔍 DEBUG: proposalId:', proposalId);
+      console.log('🔍 DEBUG: proposal_id:', proposal_id);
+      console.log('🔍 DEBUG: actualProposalId:', actualProposalId);
       
       if (!actualProposalId) {
         throw new ConflictException('Se requiere proposalId o proposal_id');
       }
 
       // Buscar la propuesta por proposalId
+      console.log('🔍 DEBUG: Buscando propuesta con ID:', actualProposalId);
       const proposal = await this.prisma.jobProposal.findUnique({
         where: { id: actualProposalId },
         include: {
           message: true
         }
       });
+
+      console.log('🔍 DEBUG: Propuesta encontrada:', proposal);
 
       if (!proposal) {
         throw new NotFoundException('Propuesta no encontrada');
@@ -34,17 +43,23 @@ export class ReviewUserService {
       let updateField: 'review_status_reviewer' | 'review_status_receiver';
       let userId: number;
 
+      console.log('🔍 DEBUG: reviewer_id:', reviewer_id);
+      console.log('🔍 DEBUG: receiver_id:', receiver_id);
+
       if (reviewer_id && reviewer_id !== null) {
-        // Si reviewer_id está definido, actualizar review_status_reviewer
+        // Si reviewer_id está definido, actualizar review_status_receiver
         // y enlazar la reseña con el reviewer_id
-        updateField = 'review_status_reviewer';
-        userId = reviewer_id;
-      } else if (receiver_id && receiver_id !== null) {
-        // Si receiver_id está definido, actualizar review_status_receiver
-        // y enlazar la reseña con el receiver_id
         updateField = 'review_status_receiver';
+        userId = reviewer_id;
+        console.log('🔍 DEBUG: Usando reviewer_id - updateField:', updateField, 'userId:', userId);
+      } else if (receiver_id && receiver_id !== null) {
+        // Si receiver_id está definido, actualizar review_status_reviewer
+        // y enlazar la reseña con el receiver_id
+        updateField = 'review_status_reviewer';
         userId = receiver_id;
+        console.log('🔍 DEBUG: Usando receiver_id - updateField:', updateField, 'userId:', userId);
       } else {
+        console.log('🔍 DEBUG: ERROR - Ningún ID válido encontrado');
         throw new ConflictException('Se requiere reviewer_id o receiver_id');
       }
 
@@ -61,14 +76,26 @@ export class ReviewUserService {
       }
 
       // Actualizar el campo review_status correspondiente en la propuesta
-      await this.prisma.jobProposal.update({
+      console.log('🔍 DEBUG: Actualizando propuesta con ID:', actualProposalId);
+      console.log('🔍 DEBUG: Campo a actualizar:', updateField, '= true');
+      
+      const updatedProposal = await this.prisma.jobProposal.update({
         where: { id: actualProposalId },
         data: {
           [updateField]: true
         }
       });
+      
+      console.log('🔍 DEBUG: Propuesta actualizada:', updatedProposal);
 
       // Crear la reseña usando los datos de data
+      console.log('🔍 DEBUG: Creando reseña con userId:', userId);
+      console.log('🔍 DEBUG: Datos de la reseña:', {
+        user_id: userId,
+        comment: data.comment,
+        job_id: data.job_id || null
+      });
+      
       const review = await this.prisma.review.create({
         data: {
           user_id: userId,
@@ -86,6 +113,9 @@ export class ReviewUserService {
           }
         }
       });
+
+      console.log('🔍 DEBUG: Reseña creada exitosamente:', review);
+      console.log('🔍 DEBUG: ✅ PROCESO COMPLETADO');
 
       // Actualizar el rating promedio del usuario (ya no es necesario ya que no hay rating en la nueva estructura)
       // await this.updateUserRating(userId);
