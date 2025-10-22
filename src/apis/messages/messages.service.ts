@@ -847,6 +847,8 @@ export class MessagesService {
 
   async updateStatus(id: number, updateStatusDto: UpdateMessageStatusDto) {
     try {
+      console.log('🔍 DEBUG: Actualizando status de mensaje:', id, 'con datos:', updateStatusDto);
+      
       const existingMessage = await this.prisma.message.findUnique({
         where: { id },
         include: {
@@ -860,6 +862,9 @@ export class MessagesService {
           message: 'Mensaje no encontrado'
         };
       }
+
+      console.log('🔍 DEBUG: Mensaje encontrado - Tipo:', existingMessage.type_message);
+      console.log('🔍 DEBUG: Tiene propuesta:', !!existingMessage.proposal);
 
       let updateData: any = {};
       
@@ -875,6 +880,47 @@ export class MessagesService {
             status: 'warning',
             message: 'Este mensaje no tiene una propuesta asociada'
           };
+        }
+        
+        // Si es 'accepted' o 'accept', relacionar la propuesta con el receiver
+        if (updateStatusDto.proposal_status === 'accepted' || updateStatusDto.proposal_status === 'accept') {
+          console.log('🔍 DEBUG: Procesando aceptación de propuesta desde mensaje');
+          
+          // Obtener la propuesta para identificar al receiver
+          const proposal = await this.prisma.jobProposal.findUnique({
+            where: { message_id: id },
+            select: {
+              id: true,
+              receiver_id: true,
+              user_id: true,
+              issuer_id: true,
+              title: true
+            }
+          });
+
+          if (!proposal) {
+            return {
+              status: 'error',
+              message: 'Propuesta no encontrada',
+              data: null
+            };
+          }
+
+          console.log('🔍 DEBUG: Propuesta encontrada - Receiver ID:', proposal.receiver_id);
+          console.log('🔍 DEBUG: User ID actual:', proposal.user_id);
+          console.log('🔍 DEBUG: Issuer ID:', proposal.issuer_id);
+
+          // Actualizar la propuesta para relacionarla con el receiver
+          await this.prisma.jobProposal.update({
+            where: { message_id: id },
+            data: {
+              user_id: proposal.receiver_id, // Relacionar con el receiver
+              status: 'accepted' as any,
+              updated_at: new Date()
+            }
+          });
+
+          console.log('🔍 DEBUG: ✅ Propuesta aceptada y relacionada con receiver ID:', proposal.receiver_id);
         }
         
         // Si es confirmed_payment, actualizar los campos de los usuarios
