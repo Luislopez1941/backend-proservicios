@@ -27,6 +27,14 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
+  @Get('get-user-by-id-my-profile/:type/:id')
+  @ApiOperation({ summary: 'Obtener usuario por ID con reviews y propuestas', description: 'Obtiene un usuario específico por su ID incluyendo sus reviews y job proposals' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Usuario con reviews y propuestas obtenido exitosamente' })
+  getUserByIdMyProfile(@Param('type') type: string, @Param('id') id: string) {
+    return this.userService.findUserWithReviewsAndProposals(+id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar usuarios', description: 'Obtiene la lista de todos los usuarios' })
   @ApiBearerAuth()

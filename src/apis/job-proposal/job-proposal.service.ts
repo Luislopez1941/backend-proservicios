@@ -13,11 +13,16 @@ export class JobProposalService {
 
   async create(createJobProposalDto: CreateJobProposalDto) {
     try {
+      console.log('🔍 DEBUG: Creando job proposal con datos:', createJobProposalDto);
+      
       // Verificar que ambos usuarios existen
       const [issuer, receiver] = await Promise.all([
         this.prisma.user.findUnique({ where: { id: createJobProposalDto.issuer_id } }),
         this.prisma.user.findUnique({ where: { id: createJobProposalDto.receiver_id } })
       ]);
+      
+      console.log('🔍 DEBUG: Issuer encontrado:', issuer?.first_name, issuer?.first_surname);
+      console.log('🔍 DEBUG: Receiver encontrado:', receiver?.first_name, receiver?.first_surname);
 
       if (!issuer || !receiver) {
         return {
@@ -28,6 +33,8 @@ export class JobProposalService {
       }
 
       // Buscar chat existente entre estos dos usuarios
+      console.log('🔍 DEBUG: Buscando chat existente entre usuarios:', createJobProposalDto.issuer_id, 'y', createJobProposalDto.receiver_id);
+      
       let chat = await this.prisma.chat.findFirst({
         where: {
           AND: [
@@ -41,8 +48,11 @@ export class JobProposalService {
         }
       });
 
+      console.log('🔍 DEBUG: Chat encontrado:', chat?.id);
+
       // Si no existe el chat, crearlo
       if (!chat) {
+        console.log('🔍 DEBUG: Creando nuevo chat');
         chat = await this.prisma.chat.create({
           data: {
             issuer_id: createJobProposalDto.issuer_id,
@@ -51,9 +61,12 @@ export class JobProposalService {
             message_text: {}
           }
         });
+        console.log('🔍 DEBUG: Chat creado con ID:', chat.id);
       }
 
       // Crear el mensaje en el chat
+      console.log('🔍 DEBUG: Creando mensaje en chat ID:', chat.id);
+      
       const message = await this.prisma.message.create({
         data: {
           issuer_id: createJobProposalDto.issuer_id,
@@ -68,7 +81,11 @@ export class JobProposalService {
         }
       });
 
+      console.log('🔍 DEBUG: Mensaje creado con ID:', message.id);
+
       // Ahora crear la propuesta con el message_id correcto
+      console.log('🔍 DEBUG: Creando job proposal con message_id:', message.id);
+      
       const jobProposal = await this.prisma.jobProposal.create({
         data: {
           message_id: message.id,
@@ -194,6 +211,9 @@ export class JobProposalService {
         }
       }
 
+      console.log('🔍 DEBUG: Job proposal creada exitosamente con ID:', jobProposal.id);
+      console.log('🔍 DEBUG: ✅ PROCESO COMPLETADO');
+
       return {
         status: 'success',
         message: 'Propuesta de trabajo creada exitosamente',
@@ -211,6 +231,91 @@ export class JobProposalService {
 
   async updateProposalStatus(proposalId: number, status: string, rating?: number, raterId?: number, ratedUserId?: number) {
     try {
+      console.log('🔍 DEBUG: Actualizando status de propuesta:', proposalId, 'a:', status);
+      
+      // Si el status es 'accepted' o 'accept', relacionar la propuesta con el receiver
+      if(status === 'accepted' || status === 'accept') {
+        console.log('🔍 DEBUG: Procesando aceptación de propuesta');
+        
+        // Obtener la propuesta para identificar al receiver
+        const proposal = await this.prisma.jobProposal.findUnique({
+          where: { id: proposalId },
+          select: {
+            id: true,
+            receiver_id: true,
+            user_id: true,
+            issuer_id: true,
+            title: true
+          }
+        });
+
+        if (!proposal) {
+          return {
+            status: 'error',
+            message: 'Propuesta no encontrada',
+            data: null
+          };
+        }
+
+        console.log('🔍 DEBUG: Propuesta encontrada - Receiver ID:', proposal.receiver_id);
+        console.log('🔍 DEBUG: User ID actual:', proposal.user_id);
+        console.log('🔍 DEBUG: Issuer ID:', proposal.issuer_id);
+
+        // Actualizar la propuesta para relacionarla con el receiver
+        const updatedProposal = await this.prisma.jobProposal.update({
+          where: { id: proposalId },
+          data: {
+            user_id: proposal.receiver_id, // Relacionar con el receiver
+            status: 'accepted' as any,
+            updated_at: new Date()
+          },
+          include: {
+            message: {
+              include: {
+                issuer: {
+                  select: {
+                    id: true,
+                    first_name: true,
+                    first_surname: true,
+                    email: true,
+                    profilePhoto: true,
+                    type_user: true
+                  }
+                },
+                receiver: {
+                  select: {
+                    id: true,
+                    first_name: true,
+                    first_surname: true,
+                    email: true,
+                    profilePhoto: true,
+                    type_user: true
+                  }
+                }
+              }
+            },
+            user: {
+              select: {
+                id: true,
+                first_name: true,
+                first_surname: true,
+                email: true,
+                profilePhoto: true,
+                type_user: true
+              }
+            }
+          }
+        });
+
+        console.log('🔍 DEBUG: ✅ Propuesta aceptada y relacionada con receiver ID:', proposal.receiver_id);
+
+        return {
+          status: 'success',
+          message: 'Propuesta aceptada exitosamente',
+          data: updatedProposal
+        };
+      }
+
       if(status === 'confirmed_payment') {
         // Obtener la propuesta con los IDs de los usuarios
         const proposal = await this.prisma.jobProposal.findUnique({

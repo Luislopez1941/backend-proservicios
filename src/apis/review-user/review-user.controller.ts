@@ -22,6 +22,11 @@ export class ReviewUserController {
     return this.reviewUserService.findByUserId(+userId);
   }
 
+  @Get('with-proposals')
+  findReviewsWithProposals() {
+    return this.reviewUserService.findReviewsWithProposals();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.reviewUserService.findOne(+id);

@@ -812,4 +812,143 @@ export class UserService {
       };
     }
   }
+
+  async findUserWithReviewsAndProposals(id: number) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          // Información básica del usuario
+          jobs: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              status: true,
+              created_at: true,
+              updated_at: true,
+              category: true,
+              budget: true,
+              location: true,
+              urgency: true,
+              professions: true,
+              images: true,
+              price: true,
+              proposalsCount: true,
+              viewsCount: true,
+              requirements: true,
+              timeline: true,
+              workType: true
+            },
+            orderBy: {
+              created_at: 'desc'
+            }
+          },
+          proposals: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  profilePhoto: true,
+                  email: true,
+                  phone: true,
+                  type_user: true
+                }
+              },
+              message: {
+                select: {
+                  id: true,
+                  message: true,
+                  created_at: true,
+                  title: true,
+                  type_message: true
+                }
+              }
+            },
+            orderBy: {
+              created_at: 'desc'
+            }
+          },
+          reviews: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  profilePhoto: true
+                }
+              }
+            },
+            orderBy: {
+              created_at: 'desc'
+            }
+          }
+        }
+      });
+
+      if (!user) {
+        return {
+          status: 'error',
+          message: 'Usuario no encontrado',
+          data: null
+        };
+      }
+
+      // Buscar job proposals relacionadas con las reviews del usuario
+      const reviewsWithProposals = await Promise.all(
+        user.reviews.map(async (review) => {
+          let proposal: any = null;
+          
+          if (review.job_id) {
+            proposal = await this.prisma.jobProposal.findFirst({
+              where: {
+                id: review.job_id
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    first_name: true,
+                    first_surname: true,
+                    profilePhoto: true
+                  }
+                },
+                message: {
+                  select: {
+                    id: true,
+                    message: true,
+                    created_at: true
+                  }
+                }
+              }
+            });
+          }
+
+          return {
+            ...review,
+            proposal
+          };
+        })
+      );
+
+      return {
+        status: 'success',
+        message: 'Usuario con reviews y propuestas obtenido exitosamente',
+        data: {
+          ...user,
+          reviews: reviewsWithProposals
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching user with reviews and proposals:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener el usuario con reviews y propuestas',
+        data: null
+      };
+    }
+  }
 }

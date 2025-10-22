@@ -237,6 +237,78 @@ export class ReviewUserService {
     }
   }
 
+  async findReviewsWithProposals() {
+    try {
+      const reviews = await this.prisma.review.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              profilePhoto: true
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        }
+      });
+
+      // Buscar las propuestas relacionadas con las reseñas
+      const reviewsWithProposals = await Promise.all(
+        reviews.map(async (review) => {
+          let proposal: any = null;
+          
+          if (review.job_id) {
+            // Buscar propuestas que tengan relación con este job_id
+            // Como job_id puede ser el ID de la propuesta directamente
+            proposal = await this.prisma.jobProposal.findFirst({
+              where: {
+                id: review.job_id // Buscar por ID de la propuesta
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    first_name: true,
+                    first_surname: true,
+                    profilePhoto: true
+                  }
+                },
+                message: {
+                  select: {
+                    id: true,
+                    message: true,
+                    created_at: true
+                  }
+                }
+              }
+            });
+          }
+
+          return {
+            ...review,
+            proposal
+          };
+        })
+      );
+
+      return {
+        status: 'success',
+        message: 'Reseñas con propuestas obtenidas exitosamente',
+        data: reviewsWithProposals
+      };
+    } catch (error) {
+      console.error('Error fetching reviews with proposals:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener las reseñas con propuestas',
+        data: null
+      };
+    }
+  }
+
   async update(id: number, updateReviewUserDto: UpdateReviewUserDto) {
     try {
       const review = await this.prisma.review.findUnique({
