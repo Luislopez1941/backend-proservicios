@@ -1,25 +1,22 @@
-import { IsInt, IsString, IsOptional, Min, Max, IsNotEmpty } from 'class-validator';
+import { IsInt, IsString, IsOptional, Min, Max, IsNotEmpty, IsObject } from 'class-validator';
 
 export class CreateReviewUserDto {
+  @IsInt()
+  @IsNotEmpty()
+  proposalId: number; // ID de la propuesta
+
   @IsInt()
   @IsNotEmpty()
   reviewer_id: number; // Usuario que da la reseña
 
   @IsInt()
   @IsNotEmpty()
-  reviewed_id: number; // Usuario que recibe la reseña
+  receiver_id: number; // Usuario que recibe la reseña
 
-  @IsInt()
-  @Min(1)
-  @Max(5)
+  @IsObject()
   @IsNotEmpty()
-  rating: number; // Calificación de 1 a 5
-
-  @IsString()
-  @IsOptional()
-  comment?: string; // Comentario opcional
-
-  @IsInt()
-  @IsOptional()
-  job_id?: number; // ID del trabajo relacionado (opcional)
+  data: {
+    comment?: string; // Comentario opcional
+    job_id?: number; // ID del trabajo relacionado (opcional)
+  };
 }

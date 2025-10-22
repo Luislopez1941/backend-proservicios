@@ -3,7 +3,7 @@ import { ReviewUserService } from './review-user.service';
 import { CreateReviewUserDto } from './dto/create-review-user.dto';
 import { UpdateReviewUserDto } from './dto/update-review-user.dto';
 
-@Controller('review-user')
+@Controller('review')
 export class ReviewUserController {
   constructor(private readonly reviewUserService: ReviewUserService) {}
 

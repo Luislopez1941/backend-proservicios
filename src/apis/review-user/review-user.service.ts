@@ -9,34 +9,65 @@ export class ReviewUserService {
 
   async create(createReviewUserDto: CreateReviewUserDto) {
     try {
-      // Verificar que no exista ya una reseña del mismo usuario para el mismo trabajo
-      if (createReviewUserDto.job_id) {
-        const existingReview = await this.prisma.review.findFirst({
-          where: {
-            reviewer_id: createReviewUserDto.reviewer_id,
-            reviewed_id: createReviewUserDto.reviewed_id,
-            job_id: createReviewUserDto.job_id
-          }
-        });
+      const { proposalId, reviewer_id, receiver_id, data } = createReviewUserDto;
 
-        if (existingReview) {
-          throw new ConflictException('Ya existe una reseña para este trabajo');
+      // Buscar la propuesta por proposalId
+      const proposal = await this.prisma.jobProposal.findUnique({
+        where: { id: proposalId },
+        include: {
+          message: true
         }
+      });
+
+      if (!proposal) {
+        throw new NotFoundException('Propuesta no encontrada');
       }
 
-      // Crear la reseña
+      // Determinar cuál campo review_status actualizar basado en el usuario
+      let updateField: 'review_status_reviewer' | 'review_status_receiver';
+      let userId: number;
+
+      if (reviewer_id === proposal.user_id) {
+        // Si el reviewer_id coincide con el user_id de la propuesta, actualizar review_status_reviewer
+        updateField = 'review_status_reviewer';
+        userId = reviewer_id;
+      } else if (receiver_id === proposal.user_id) {
+        // Si el receiver_id coincide con el user_id de la propuesta, actualizar review_status_receiver
+        updateField = 'review_status_receiver';
+        userId = receiver_id;
+      } else {
+        throw new ConflictException('Los IDs de usuario no coinciden con la propuesta');
+      }
+
+      // Verificar que no exista ya una reseña del mismo usuario para esta propuesta
+      const existingReview = await this.prisma.review.findFirst({
+        where: {
+          user_id: userId,
+          job_id: data.job_id || null
+        }
+      });
+
+      if (existingReview) {
+        throw new ConflictException('Ya existe una reseña para esta propuesta');
+      }
+
+      // Actualizar el campo review_status correspondiente en la propuesta
+      await this.prisma.jobProposal.update({
+        where: { id: proposalId },
+        data: {
+          [updateField]: true
+        }
+      });
+
+      // Crear la reseña usando los datos de data
       const review = await this.prisma.review.create({
-        data: createReviewUserDto,
+        data: {
+          user_id: userId,
+          comment: data.comment,
+          job_id: data.job_id || null
+        },
         include: {
-          reviewer: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          },
-          reviewed: {
+          user: {
             select: {
               id: true,
               first_name: true,
@@ -47,8 +78,8 @@ export class ReviewUserService {
         }
       });
 
-      // Actualizar el rating promedio del usuario reseñado
-      await this.updateUserRating(createReviewUserDto.reviewed_id);
+      // Actualizar el rating promedio del usuario (ya no es necesario ya que no hay rating en la nueva estructura)
+      // await this.updateUserRating(userId);
 
       return {
         status: 'success',
@@ -69,15 +100,7 @@ export class ReviewUserService {
     try {
       const reviews = await this.prisma.review.findMany({
         include: {
-          reviewer: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          },
-          reviewed: {
+          user: {
             select: {
               id: true,
               first_name: true,
@@ -111,15 +134,7 @@ export class ReviewUserService {
       const review = await this.prisma.review.findUnique({
         where: { id },
         include: {
-          reviewer: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          },
-          reviewed: {
+          user: {
             select: {
               id: true,
               first_name: true,
@@ -152,9 +167,9 @@ export class ReviewUserService {
   async findByUserId(userId: number) {
     try {
       const reviews = await this.prisma.review.findMany({
-        where: { reviewed_id: userId },
+        where: { user_id: userId },
         include: {
-          reviewer: {
+          user: {
             select: {
               id: true,
               first_name: true,
@@ -200,15 +215,7 @@ export class ReviewUserService {
           updated_at: new Date()
         },
         include: {
-          reviewer: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          },
-          reviewed: {
+          user: {
             select: {
               id: true,
               first_name: true,
@@ -218,9 +225,6 @@ export class ReviewUserService {
           }
         }
       });
-
-      // Actualizar el rating promedio del usuario reseñado
-      await this.updateUserRating(review.reviewed_id);
 
       return {
         status: 'success',
@@ -251,9 +255,6 @@ export class ReviewUserService {
         where: { id }
       });
 
-      // Actualizar el rating promedio del usuario reseñado
-      await this.updateUserRating(review.reviewed_id);
-
       return {
         status: 'success',
         message: 'Reseña eliminada exitosamente',
@@ -269,27 +270,4 @@ export class ReviewUserService {
     }
   }
 
-  private async updateUserRating(userId: number) {
-    try {
-      const reviews = await this.prisma.review.findMany({
-        where: { reviewed_id: userId },
-        select: { rating: true }
-      });
-
-      if (reviews.length > 0) {
-        const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-        const averageRating = totalRating / reviews.length;
-
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            rating: Math.round(averageRating * 10) / 10, // Redondear a 1 decimal
-            reviewsCount: reviews.length
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error updating user rating:', error);
-    }
-  }
 }

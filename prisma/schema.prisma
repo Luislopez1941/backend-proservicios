@@ -119,8 +119,7 @@ model User {
   user1Chats       Chat[]        @relation("ChatIssuer")
   user2Chats       Chat[]        @relation("ChatReceiver")
   proposals        JobProposal[]
-  reviewsGiven     Review[]      @relation("ReviewGiver")
-  reviewsReceived  Review[]      @relation("ReviewReceiver")
+  reviews          Review[]      @relation("ReviewUser")
 
   @@map("users")
 }
@@ -246,19 +245,16 @@ model JobProposal {
 
 model Review {
   id          Int      @id @default(autoincrement())
-  reviewer_id Int      // Usuario que da la reseña
-  reviewed_id Int      // Usuario que recibe la reseña
-  rating      Int      // Calificación de 1 a 5
+  user_id     Int      // Usuario que da la reseña
   comment     String?  @db.Text // Comentario opcional
   job_id      Int?     // ID del trabajo relacionado (opcional)
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
 
   // Relaciones
-  reviewer User @relation("ReviewGiver", fields: [reviewer_id], references: [id], onDelete: Cascade)
-  reviewed User @relation("ReviewReceiver", fields: [reviewed_id], references: [id], onDelete: Cascade)
+  user User @relation("ReviewUser", fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([reviewer_id, reviewed_id, job_id], name: "unique_review_per_job")
+  @@unique([user_id, job_id], name: "unique_review_per_user_job")
   @@map("reviews")
 }
 
