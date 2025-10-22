@@ -27,8 +27,8 @@ export class CreateJobDto {
   @IsEnum(['open', 'in_progress', 'completed', 'cancelled'], { message: 'El estado debe ser uno de los valores válidos' })
   status?: 'open' | 'in_progress' | 'completed' | 'cancelled';
 
-  @IsObject({ message: 'Las profesiones deben ser un objeto' })
-  professions: any;
+  @IsArray({ message: 'Las profesiones deben ser un array' })
+  professions: any[];
 
   @IsOptional()
   @IsArray({ message: 'Las imágenes deben ser un array' })
