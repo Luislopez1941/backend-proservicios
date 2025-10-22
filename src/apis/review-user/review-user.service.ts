@@ -30,21 +30,22 @@ export class ReviewUserService {
         throw new NotFoundException('Propuesta no encontrada');
       }
 
-      // Determinar cuál campo review_status actualizar basado en el usuario
+      // Determinar cuál campo actualizar y con qué usuario enlazar la reseña
       let updateField: 'review_status_reviewer' | 'review_status_receiver';
       let userId: number;
 
-      // Verificar cuál de los dos IDs está definido y coincide con la propuesta
-      if (reviewer_id && reviewer_id === proposal.user_id) {
-        // Si el reviewer_id está definido y coincide con el user_id de la propuesta
+      if (reviewer_id && reviewer_id !== null) {
+        // Si reviewer_id está definido, actualizar review_status_reviewer
+        // y enlazar la reseña con el reviewer_id
         updateField = 'review_status_reviewer';
         userId = reviewer_id;
-      } else if (receiver_id && receiver_id === proposal.user_id) {
-        // Si el receiver_id está definido y coincide con el user_id de la propuesta
+      } else if (receiver_id && receiver_id !== null) {
+        // Si receiver_id está definido, actualizar review_status_receiver
+        // y enlazar la reseña con el receiver_id
         updateField = 'review_status_receiver';
         userId = receiver_id;
       } else {
-        throw new ConflictException('Los IDs de usuario no coinciden con la propuesta o están indefinidos');
+        throw new ConflictException('Se requiere reviewer_id o receiver_id');
       }
 
       // Verificar que no exista ya una reseña del mismo usuario para esta propuesta
