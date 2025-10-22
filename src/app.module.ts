@@ -14,6 +14,7 @@ import { StorageModule } from './apis/storage/storage.module';
 import { SocketModule } from './apis/socket/socket.module';
 import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
 import { ReviewUserModule } from './apis/review-user/review-user.module';
+import { JobModule } from './apis/job/job.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { ReviewUserModule } from './apis/review-user/review-user.module';
     StorageModule,
     SocketModule,
     JobProposalModule,
-    ReviewUserModule
+    ReviewUserModule,
+    JobModule
   ],
   controllers: [AppController],
   providers: [AppService],
