@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class JobService {
@@ -36,11 +37,11 @@ export class JobService {
           urgency: createJobDto.urgency || 'normal',
           status: createJobDto.status || 'open',
           professions: createJobDto.professions,
-          images: createJobDto.images || null,
+          images: createJobDto.images || Prisma.JsonNull,
           price: createJobDto.price,
           proposalsCount: createJobDto.proposalsCount || 0,
           viewsCount: createJobDto.viewsCount || 0,
-          requirements: createJobDto.requirements || null,
+          requirements: createJobDto.requirements || Prisma.JsonNull,
           timeline: createJobDto.timeline || null,
           workType: createJobDto.workType || null,
           
@@ -49,7 +50,7 @@ export class JobService {
           location_lat: createJobDto.location_lat || null,
           location_lng: createJobDto.location_lng || null,
           location_place_id: createJobDto.location_place_id || null,
-          location_bounds: createJobDto.location_bounds || null,
+          location_bounds: createJobDto.location_bounds || Prisma.JsonNull,
           
           // Structured Location Data
           location_street: createJobDto.location_street || null,

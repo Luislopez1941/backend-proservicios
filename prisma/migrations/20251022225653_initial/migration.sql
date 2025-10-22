@@ -94,6 +94,12 @@ CREATE TABLE "public"."jobs" (
     "location_lng" DOUBLE PRECISION,
     "location_place_id" VARCHAR(255),
     "location_bounds" JSONB,
+    "location_street" VARCHAR(255),
+    "location_colony" VARCHAR(255),
+    "location_city" VARCHAR(255),
+    "location_state" VARCHAR(255),
+    "location_postal_code" VARCHAR(10),
+    "location_country" VARCHAR(255),
 
     CONSTRAINT "jobs_pkey" PRIMARY KEY ("id")
 );
@@ -167,9 +173,7 @@ CREATE TABLE "public"."JobProposal" (
 -- CreateTable
 CREATE TABLE "public"."reviews" (
     "id" SERIAL NOT NULL,
-    "reviewer_id" INTEGER NOT NULL,
-    "reviewed_id" INTEGER NOT NULL,
-    "rating" INTEGER NOT NULL,
+    "user_id" INTEGER NOT NULL,
     "comment" TEXT,
     "job_id" INTEGER,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -198,7 +202,7 @@ CREATE UNIQUE INDEX "professions_name_key" ON "public"."professions"("name");
 CREATE UNIQUE INDEX "JobProposal_message_id_key" ON "public"."JobProposal"("message_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "reviews_reviewer_id_reviewed_id_job_id_key" ON "public"."reviews"("reviewer_id", "reviewed_id", "job_id");
+CREATE UNIQUE INDEX "reviews_user_id_job_id_key" ON "public"."reviews"("user_id", "job_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "locations_id_location_type_key" ON "public"."locations"("id_location", "type");
@@ -228,7 +232,4 @@ ALTER TABLE "public"."JobProposal" ADD CONSTRAINT "JobProposal_message_id_fkey" 
 ALTER TABLE "public"."JobProposal" ADD CONSTRAINT "JobProposal_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_reviewed_id_fkey" FOREIGN KEY ("reviewed_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."reviews" ADD CONSTRAINT "reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
