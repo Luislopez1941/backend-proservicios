@@ -472,8 +472,7 @@ export class UserService {
           user1Chats: true,
           user2Chats: true,
           proposals: true,
-          reviewsGiven: true,
-          reviewsReceived: true,
+          reviews: true,
         }
       });
 

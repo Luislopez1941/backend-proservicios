@@ -270,8 +270,7 @@ export class JobProposalService {
         // Verificar si ya existe una reseña para esta propuesta
         const existingReview = await this.prisma.review.findFirst({
           where: {
-            reviewer_id: raterId,
-            reviewed_id: ratedUserId,
+            user_id: raterId,
             job_id: proposalId
           }
         });
@@ -282,23 +281,20 @@ export class JobProposalService {
           review = await this.prisma.review.update({
             where: { id: existingReview.id },
             data: {
-              rating: rating,
               comment: `Calificación actualizada del trabajo`
             }
           });
-          console.log(`📝 Reseña actualizada - ID: ${review.id}, Rating: ${rating}`);
+          console.log(`📝 Reseña actualizada - ID: ${review.id}`);
         } else {
           // Crear una nueva reseña
           review = await this.prisma.review.create({
             data: {
-              reviewer_id: raterId,      // Quien está calificando
-              reviewed_id: ratedUserId,  // Quien recibe la calificación
-              rating: rating,
+              user_id: raterId,      // Quien está calificando
               job_id: proposalId,
               comment: `Calificación automática del trabajo`
             }
           });
-          console.log(`📝 Nueva reseña creada - ID: ${review.id}, Rating: ${rating}`);
+          console.log(`📝 Nueva reseña creada - ID: ${review.id}`);
         }
 
         // Obtener el usuario actual para calcular el nuevo promedio
