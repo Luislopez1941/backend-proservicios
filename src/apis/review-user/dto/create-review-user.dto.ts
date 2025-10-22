@@ -6,12 +6,12 @@ export class CreateReviewUserDto {
   proposalId: number; // ID de la propuesta
 
   @IsInt()
-  @IsNotEmpty()
-  reviewer_id: number; // Usuario que da la reseña
+  @IsOptional()
+  reviewer_id?: number; // Usuario que da la reseña (opcional)
 
   @IsInt()
-  @IsNotEmpty()
-  receiver_id: number; // Usuario que recibe la reseña
+  @IsOptional()
+  receiver_id?: number; // Usuario que recibe la reseña (opcional)
 
   @IsObject()
   @IsNotEmpty()
