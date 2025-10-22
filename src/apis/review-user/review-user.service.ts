@@ -9,11 +9,18 @@ export class ReviewUserService {
 
   async create(createReviewUserDto: CreateReviewUserDto) {
     try {
-      const { proposalId, reviewer_id, receiver_id, data } = createReviewUserDto;
+      const { proposalId, proposal_id, reviewer_id, receiver_id, data } = createReviewUserDto;
+
+      // Usar proposalId o proposal_id (el que esté definido)
+      const actualProposalId = proposalId || proposal_id;
+      
+      if (!actualProposalId) {
+        throw new ConflictException('Se requiere proposalId o proposal_id');
+      }
 
       // Buscar la propuesta por proposalId
       const proposal = await this.prisma.jobProposal.findUnique({
-        where: { id: proposalId },
+        where: { id: actualProposalId },
         include: {
           message: true
         }
@@ -54,7 +61,7 @@ export class ReviewUserService {
 
       // Actualizar el campo review_status correspondiente en la propuesta
       await this.prisma.jobProposal.update({
-        where: { id: proposalId },
+        where: { id: actualProposalId },
         data: {
           [updateField]: true
         }

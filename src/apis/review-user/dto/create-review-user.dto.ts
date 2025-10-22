@@ -1,9 +1,15 @@
 import { IsInt, IsString, IsOptional, Min, Max, IsNotEmpty, IsObject, ValidateIf } from 'class-validator';
 
 export class CreateReviewUserDto {
+  @ValidateIf((o) => o.proposalId !== undefined)
   @IsInt()
-  @IsNotEmpty()
-  proposalId: number; // ID de la propuesta
+  @IsOptional()
+  proposalId?: number; // ID de la propuesta
+
+  @ValidateIf((o) => o.proposal_id !== undefined)
+  @IsInt()
+  @IsOptional()
+  proposal_id?: number; // ID de la propuesta (alternativo)
 
   @ValidateIf((o) => o.reviewer_id !== undefined && o.reviewer_id !== null)
   @IsInt()
@@ -20,5 +26,6 @@ export class CreateReviewUserDto {
   data: {
     comment?: string; // Comentario opcional
     job_id?: number; // ID del trabajo relacionado (opcional)
+    user_id?: number; // ID del usuario (opcional, para compatibilidad)
   };
 }
