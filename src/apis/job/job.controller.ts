@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/s
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { SearchJobsDto } from './dto/search-jobs.dto';
 import { SearchJobsByLocationDto } from './dto/search-jobs-location.dto';
 import { SearchJobsByProfessionDto } from './dto/search-jobs-profession.dto';
 
@@ -25,6 +26,15 @@ export class JobController {
   @ApiResponse({ status: 200, description: 'Lista de trabajos obtenida exitosamente' })
   findAll() {
     return this.jobService.findAll();
+  }
+
+  @Post('search-jobs')
+  @ApiOperation({ summary: 'Buscar trabajos', description: 'Busca trabajos por título, descripción, categoría, etc.' })
+  @ApiBody({ type: SearchJobsDto })
+  @ApiResponse({ status: 200, description: 'Trabajos encontrados exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  searchJobs(@Body() searchJobsDto: SearchJobsDto) {
+    return this.jobService.searchJobs(searchJobsDto);
   }
 
   @Get('user/:userId')

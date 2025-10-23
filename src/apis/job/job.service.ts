@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { SearchJobsDto } from './dto/search-jobs.dto';
 import { SearchJobsByLocationDto } from './dto/search-jobs-location.dto';
 import { SearchJobsByProfessionDto } from './dto/search-jobs-profession.dto';
 import { Prisma } from '@prisma/client';
@@ -586,6 +587,123 @@ export class JobService {
 
     } catch (error) {
       console.error('❌ Error buscando trabajos por profesión:', error);
+      return {
+        status: 'error',
+        message: 'Error interno del servidor',
+        data: null
+      };
+    }
+  }
+
+  async searchJobs(searchParams: SearchJobsDto) {
+    try {
+      const { 
+        searchTerm, 
+        category, 
+        urgency, 
+        status, 
+        workType, 
+        minPrice, 
+        maxPrice, 
+        page = 1, 
+        limit = 10 
+      } = searchParams;
+      const skip = (page - 1) * limit;
+
+      // Construir filtros dinámicos
+      const where: any = {};
+
+      // Búsqueda por término general
+      if (searchTerm) {
+        where.OR = [
+          {
+            title: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          },
+          {
+            description: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          },
+          {
+            location: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          }
+        ];
+      }
+
+      // Filtros específicos
+      if (category) {
+        where.category = {
+          contains: category,
+          mode: 'insensitive'
+        };
+      }
+      if (urgency) {
+        where.urgency = urgency;
+      }
+      if (status) {
+        where.status = status;
+      }
+      if (workType) {
+        where.workType = workType;
+      }
+
+      // Filtro por rango de precios
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        where.price = {};
+        if (minPrice !== undefined) {
+          where.price.gte = minPrice.toString();
+        }
+        if (maxPrice !== undefined) {
+          where.price.lte = maxPrice.toString();
+        }
+      }
+
+      const jobs = await this.prisma.job.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              profilePhoto: true,
+              rating: true,
+              reviewsCount: true
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        skip,
+        take: limit
+      });
+
+      const total = await this.prisma.job.count({ where });
+
+      return {
+        status: 'success',
+        message: 'Trabajos encontrados exitosamente',
+        data: {
+          jobs,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error buscando trabajos:', error);
       return {
         status: 'error',
         message: 'Error interno del servidor',
