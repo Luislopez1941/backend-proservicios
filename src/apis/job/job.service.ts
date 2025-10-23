@@ -604,7 +604,9 @@ export class JobService {
         status, 
         workType, 
         minPrice, 
-        maxPrice, 
+        maxPrice,
+        location,
+        professions,
         page = 1, 
         limit = 10 
       } = searchParams;
@@ -662,6 +664,83 @@ export class JobService {
         }
         if (maxPrice !== undefined) {
           where.price.lte = maxPrice.toString();
+        }
+      }
+
+      // Filtro por ubicación
+      if (location) {
+        // Búsqueda por place_id (Google Places)
+        if (location.place_id) {
+          where.location_place_id = location.place_id;
+        }
+        
+        // Búsqueda por descripción o main_text
+        if (location.description || location.main_text) {
+          const searchText = location.description || location.main_text;
+          const locationFilters = [
+            {
+              location_address: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            },
+            {
+              location_city: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            },
+            {
+              location_state: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            }
+          ];
+          
+          if (where.OR) {
+            where.AND = [where.OR, { OR: locationFilters }];
+            delete where.OR;
+          } else {
+            where.OR = locationFilters;
+          }
+        }
+      }
+
+      // Filtro por profesiones
+      if (professions && professions.length > 0) {
+        const professionNames = professions.map(prof => prof.name).filter(name => name);
+        const professionIds = professions.map(prof => prof.id).filter(id => id);
+        
+        if (professionNames.length > 0 || professionIds.length > 0) {
+          const professionFilters: any[] = [];
+          
+          // Buscar por nombres de profesiones
+          professionNames.forEach(name => {
+            professionFilters.push({
+              professions: {
+                path: '$',
+                string_contains: name
+              }
+            });
+          });
+          
+          // Buscar por IDs de profesiones
+          professionIds.forEach(id => {
+            professionFilters.push({
+              professions: {
+                path: '$',
+                string_contains: `"id":${id}`
+              }
+            });
+          });
+
+          if (where.OR) {
+            where.AND = [where.OR, { OR: professionFilters }];
+            delete where.OR;
+          } else {
+            where.OR = professionFilters;
+          }
         }
       }
 
