@@ -444,7 +444,7 @@ export class JobService {
           professionNames.forEach(name => {
             where.OR.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: name
               }
             });
@@ -454,7 +454,7 @@ export class JobService {
           professionIds.forEach(id => {
             where.OR.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: `"id":${id}`
               }
             });
@@ -530,7 +530,7 @@ export class JobService {
           professionNames.forEach(name => {
             where.OR.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: name
               }
             });
@@ -540,7 +540,7 @@ export class JobService {
           professionIds.forEach(id => {
             where.OR.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: `"id":${id}`
               }
             });
@@ -723,7 +723,7 @@ export class JobService {
           professionNames.forEach(name => {
             professionFilters.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: name
               }
             });
@@ -733,7 +733,7 @@ export class JobService {
           professionIds.forEach(id => {
             professionFilters.push({
               professions: {
-                path: '$',
+                path: ['$'],
                 string_contains: `"id":${id}`
               }
             });
