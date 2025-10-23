@@ -637,6 +637,8 @@ export class JobService {
 
   async searchJobs(searchParams: SearchJobsDto) {
     try {
+      console.log('🔍 DEBUG - Parámetros recibidos:', JSON.stringify(searchParams, null, 2));
+      
       const { 
         searchTerm, 
         category, 
@@ -651,6 +653,21 @@ export class JobService {
         limit = 10 
       } = searchParams;
       const skip = (page - 1) * limit;
+
+      console.log('🔍 DEBUG - Variables extraídas:', {
+        searchTerm,
+        category,
+        urgency,
+        status,
+        workType,
+        minPrice,
+        maxPrice,
+        location,
+        professions,
+        page,
+        limit,
+        skip
+      });
 
       // Construir filtros dinámicos
       const where: any = {};
@@ -709,10 +726,13 @@ export class JobService {
 
       // Filtro por ubicación - VERSIÓN SIMPLIFICADA
       if (location) {
+        console.log('🔍 DEBUG - Procesando ubicación:', JSON.stringify(location, null, 2));
+        
         const locationConditions: any[] = [];
         
         // Búsqueda por place_id (Google Places)
         if (location.place_id) {
+          console.log('🔍 DEBUG - Agregando filtro por place_id:', location.place_id);
           locationConditions.push({
             location_place_id: location.place_id
           });
@@ -721,6 +741,7 @@ export class JobService {
         // Búsqueda por descripción o main_text - SIMPLIFICADO
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
+          console.log('🔍 DEBUG - Agregando filtro por texto:', searchText);
           
           // Buscar solo en el campo location básico primero
           locationConditions.push({
@@ -755,22 +776,31 @@ export class JobService {
           });
         }
 
+        console.log('🔍 DEBUG - Condiciones de ubicación:', JSON.stringify(locationConditions, null, 2));
+
         if (locationConditions.length > 0) {
-          where.OR = where.OR || [];
-          where.OR.push({ OR: locationConditions });
+          where.AND = where.AND || [];
+          where.AND.push({ OR: locationConditions });
+          console.log('🔍 DEBUG - WHERE después de ubicación:', JSON.stringify(where, null, 2));
         }
       }
 
       // Filtro por profesiones - VERSIÓN SIMPLIFICADA
       if (professions && professions.length > 0) {
+        console.log('🔍 DEBUG - Procesando profesiones:', JSON.stringify(professions, null, 2));
+        
         const professionNames = professions.map(prof => prof.name).filter(name => name);
         const professionIds = professions.map(prof => prof.id).filter(id => id);
+        
+        console.log('🔍 DEBUG - Nombres de profesiones:', professionNames);
+        console.log('🔍 DEBUG - IDs de profesiones:', professionIds);
         
         if (professionNames.length > 0 || professionIds.length > 0) {
           const professionFilters: any[] = [];
           
           // Buscar por nombres de profesiones
           professionNames.forEach(name => {
+            console.log('🔍 DEBUG - Agregando filtro por nombre:', name);
             professionFilters.push({
               professions: {
                 path: ['$'],
@@ -781,6 +811,7 @@ export class JobService {
           
           // Buscar por IDs de profesiones
           professionIds.forEach(id => {
+            console.log('🔍 DEBUG - Agregando filtro por ID:', id);
             professionFilters.push({
               professions: {
                 path: ['$'],
@@ -789,9 +820,12 @@ export class JobService {
             });
           });
 
+          console.log('🔍 DEBUG - Filtros de profesiones:', JSON.stringify(professionFilters, null, 2));
+
           if (professionFilters.length > 0) {
-            where.OR = where.OR || [];
-            where.OR.push({ OR: professionFilters });
+            where.AND = where.AND || [];
+            where.AND.push({ OR: professionFilters });
+            console.log('🔍 DEBUG - WHERE después de profesiones:', JSON.stringify(where, null, 2));
           }
         }
       }
@@ -820,7 +854,11 @@ export class JobService {
         take: limit
       });
 
+      console.log('🔍 DEBUG - Trabajos encontrados:', jobs.length);
+      console.log('🔍 DEBUG - Primeros trabajos:', JSON.stringify(jobs.slice(0, 2), null, 2));
+
       const total = await this.prisma.job.count({ where });
+      console.log('🔍 DEBUG - Total de trabajos que coinciden:', total);
 
       return {
         status: 'success',
