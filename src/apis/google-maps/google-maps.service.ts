@@ -127,28 +127,48 @@ export class GoogleMapsService {
         throw new Error('API_KEY_GOOGLE no está configurada');
       }
 
+      // Validar input
+      if (!input || input.trim().length === 0) {
+        throw new Error('El input no puede estar vacío');
+      }
+
+      const params: any = {
+        input: input.trim(),
+        key: apiKey,
+      };
+
+      // Agregar parámetros de ubicación si están disponibles
+      if (location && location.lat && location.lng) {
+        params.location = `${location.lat},${location.lng}`;
+        params.radius = 50000; // 50km
+      }
+
       const response = await this.client.placeAutocomplete({
-        params: {
-          input,
-          key: apiKey,
-          location: location ? `${location.lat},${location.lng}` : undefined,
-          radius: location ? 50000 : undefined, // 50km si hay ubicación
-          // region: 'mx', // Comentado temporalmente para evitar error de TypeScript
-          // types: 'cities', // Comentado temporalmente para evitar error de TypeScript
-        },
+        params,
       });
+
+      if (!response.data || !response.data.predictions) {
+        return [];
+      }
 
       return response.data.predictions.map(prediction => ({
         place_id: prediction.place_id,
         description: prediction.description,
         structured_formatting: {
-          main_text: prediction.structured_formatting.main_text,
-          secondary_text: prediction.structured_formatting.secondary_text,
+          main_text: prediction.structured_formatting?.main_text || prediction.description,
+          secondary_text: prediction.structured_formatting?.secondary_text || '',
         },
         types: prediction.types || [],
       }));
     } catch (error) {
-      this.logger.error('Error en autocompletado:', error);
+      this.logger.error('Error al obtener sugerencias de lugares:', error);
+      
+      // Si es un error de API de Google, devolver array vacío en lugar de lanzar error
+      if (error.response?.status === 400 || error.response?.status === 403) {
+        this.logger.warn('Error de API de Google Maps, devolviendo array vacío');
+        return [];
+      }
+      
       throw new Error('Error al obtener sugerencias de lugares');
     }
   }
@@ -233,7 +253,7 @@ export class GoogleMapsService {
         const location = (lat !== undefined && lng !== undefined) ? { lat, lng } : undefined;
         const suggestions = await this.autocompletePlaces(query, location);
         
-        if (suggestions.length > 0) {
+        if (suggestions && suggestions.length > 0) {
           // Filtrar sugerencias que contengan México o sean de México
           const mexicoSuggestions = suggestions.filter(suggestion => 
             suggestion.description.toLowerCase().includes('méxico') || 
