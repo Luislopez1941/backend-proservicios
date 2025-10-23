@@ -20,18 +20,6 @@ export class SearchJobsByProfessionDto {
   professions?: ProfessionSearchDto[];
 
   @IsOptional()
-  @IsString({ message: 'La categoría debe ser un string' })
-  category?: string;
-
-  @IsOptional()
-  @IsString({ message: 'La urgencia debe ser un string' })
-  urgency?: 'normal' | 'urgent';
-
-  @IsOptional()
-  @IsString({ message: 'El estado debe ser un string' })
-  status?: 'open' | 'in_progress' | 'completed' | 'cancelled';
-
-  @IsOptional()
   @IsNumber({}, { message: 'La página debe ser un número' })
   @Min(1, { message: 'La página debe ser mayor a 0' })
   @Type(() => Number)

@@ -347,7 +347,7 @@ export class JobService {
 
   async searchJobsByLocation(searchParams: SearchJobsByLocationDto) {
     try {
-      const { location, category, urgency, status, page = 1, limit = 10 } = searchParams;
+      const { location, professions, page = 1, limit = 10 } = searchParams;
       const skip = (page - 1) * limit;
 
       // Construir filtros dinámicos
@@ -399,18 +399,35 @@ export class JobService {
         }
       }
 
-      // Filtros adicionales
-      if (category) {
-        where.category = {
-          contains: category,
-          mode: 'insensitive'
-        };
-      }
-      if (urgency) {
-        where.urgency = urgency;
-      }
-      if (status) {
-        where.status = status;
+      // Filtro por profesiones
+      if (professions && professions.length > 0) {
+        // Buscar trabajos que contengan alguna de las profesiones especificadas
+        const professionNames = professions.map(prof => prof.name).filter(name => name);
+        const professionIds = professions.map(prof => prof.id).filter(id => id);
+        
+        if (professionNames.length > 0 || professionIds.length > 0) {
+          where.OR = [];
+          
+          // Buscar por nombres de profesiones
+          professionNames.forEach(name => {
+            where.OR.push({
+              professions: {
+                path: '$',
+                string_contains: name
+              }
+            });
+          });
+          
+          // Buscar por IDs de profesiones
+          professionIds.forEach(id => {
+            where.OR.push({
+              professions: {
+                path: '$',
+                string_contains: `"id":${id}`
+              }
+            });
+          });
+        }
       }
 
       const jobs = await this.prisma.job.findMany({
@@ -462,7 +479,7 @@ export class JobService {
 
   async searchJobsByProfession(searchParams: SearchJobsByProfessionDto) {
     try {
-      const { professions, category, urgency, status, page = 1, limit = 10 } = searchParams;
+      const { professions, page = 1, limit = 10 } = searchParams;
       const skip = (page - 1) * limit;
 
       // Construir filtros dinámicos
@@ -497,20 +514,6 @@ export class JobService {
             });
           });
         }
-      }
-
-      // Filtros adicionales
-      if (category) {
-        where.category = {
-          contains: category,
-          mode: 'insensitive'
-        };
-      }
-      if (urgency) {
-        where.urgency = urgency;
-      }
-      if (status) {
-        where.status = status;
       }
 
       const jobs = await this.prisma.job.findMany({

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsObject, ValidateNested, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsObject, ValidateNested, Min, Max, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class LocationSearchDto {
@@ -41,6 +41,17 @@ export class LocationSearchDto {
   location_postal_code?: string;
 }
 
+export class ProfessionSearchDto {
+  @IsOptional()
+  @IsNumber({}, { message: 'El ID debe ser un número' })
+  @Type(() => Number)
+  id?: number;
+
+  @IsOptional()
+  @IsString({ message: 'El nombre debe ser un string' })
+  name?: string;
+}
+
 export class SearchJobsByLocationDto {
   @IsOptional()
   @IsObject({ message: 'La ubicación debe ser un objeto' })
@@ -49,16 +60,10 @@ export class SearchJobsByLocationDto {
   location?: LocationSearchDto;
 
   @IsOptional()
-  @IsString({ message: 'La categoría debe ser un string' })
-  category?: string;
-
-  @IsOptional()
-  @IsString({ message: 'La urgencia debe ser un string' })
-  urgency?: 'normal' | 'urgent';
-
-  @IsOptional()
-  @IsString({ message: 'El estado debe ser un string' })
-  status?: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  @IsArray({ message: 'Las profesiones deben ser un array' })
+  @ValidateNested({ each: true })
+  @Type(() => ProfessionSearchDto)
+  professions?: ProfessionSearchDto[];
 
   @IsOptional()
   @IsNumber({}, { message: 'La página debe ser un número' })
