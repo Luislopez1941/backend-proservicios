@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/s
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { SearchJobsByLocationDto } from './dto/search-jobs-location.dto';
+import { SearchJobsByProfessionDto } from './dto/search-jobs-profession.dto';
 
 @ApiTags('Trabajos')
 @Controller('job')
@@ -63,5 +65,23 @@ export class JobController {
   @ApiResponse({ status: 404, description: 'Trabajo no encontrado' })
   remove(@Param('id') id: string) {
     return this.jobService.remove(+id);
+  }
+
+  @Post('search/location')
+  @ApiOperation({ summary: 'Buscar trabajos por ubicación', description: 'Busca trabajos filtrados por criterios de ubicación usando POST' })
+  @ApiBody({ type: SearchJobsByLocationDto })
+  @ApiResponse({ status: 200, description: 'Trabajos filtrados por ubicación obtenidos exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  searchByLocation(@Body() searchParams: SearchJobsByLocationDto) {
+    return this.jobService.searchJobsByLocation(searchParams);
+  }
+
+  @Post('search/profession')
+  @ApiOperation({ summary: 'Buscar trabajos por profesión', description: 'Busca trabajos filtrados por criterios de profesión usando POST' })
+  @ApiBody({ type: SearchJobsByProfessionDto })
+  @ApiResponse({ status: 200, description: 'Trabajos filtrados por profesión obtenidos exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  searchByProfession(@Body() searchParams: SearchJobsByProfessionDto) {
+    return this.jobService.searchJobsByProfession(searchParams);
   }
 }

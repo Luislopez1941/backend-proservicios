@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { SearchJobsByLocationDto } from './dto/search-jobs-location.dto';
+import { SearchJobsByProfessionDto } from './dto/search-jobs-profession.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -335,6 +337,221 @@ export class JobService {
 
     } catch (error) {
       console.error('❌ Error obteniendo jobs por categoría:', error);
+      return {
+        status: 'error',
+        message: 'Error interno del servidor',
+        data: null
+      };
+    }
+  }
+
+  async searchJobsByLocation(searchParams: SearchJobsByLocationDto) {
+    try {
+      const { location, category, urgency, status, page = 1, limit = 10 } = searchParams;
+      const skip = (page - 1) * limit;
+
+      // Construir filtros dinámicos
+      const where: any = {};
+
+      // Filtro por ubicación
+      if (location) {
+        if (location.location_city) {
+          where.location_city = {
+            contains: location.location_city,
+            mode: 'insensitive'
+          };
+        }
+        if (location.location_state) {
+          where.location_state = {
+            contains: location.location_state,
+            mode: 'insensitive'
+          };
+        }
+        if (location.location_country) {
+          where.location_country = {
+            contains: location.location_country,
+            mode: 'insensitive'
+          };
+        }
+        if (location.location_postal_code) {
+          where.location_postal_code = location.location_postal_code;
+        }
+        if (location.location_place_id) {
+          where.location_place_id = location.location_place_id;
+        }
+        if (location.location_lat && location.location_lng) {
+          // Búsqueda por proximidad (radio de 10km)
+          const radius = 0.1; // Aproximadamente 10km
+          where.AND = [
+            {
+              location_lat: {
+                gte: location.location_lat - radius,
+                lte: location.location_lat + radius
+              }
+            },
+            {
+              location_lng: {
+                gte: location.location_lng - radius,
+                lte: location.location_lng + radius
+              }
+            }
+          ];
+        }
+      }
+
+      // Filtros adicionales
+      if (category) {
+        where.category = {
+          contains: category,
+          mode: 'insensitive'
+        };
+      }
+      if (urgency) {
+        where.urgency = urgency;
+      }
+      if (status) {
+        where.status = status;
+      }
+
+      const jobs = await this.prisma.job.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              profilePhoto: true,
+              rating: true,
+              reviewsCount: true
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        skip,
+        take: limit
+      });
+
+      const total = await this.prisma.job.count({ where });
+
+      return {
+        status: 'success',
+        message: 'Trabajos filtrados por ubicación obtenidos exitosamente',
+        data: {
+          jobs,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error buscando trabajos por ubicación:', error);
+      return {
+        status: 'error',
+        message: 'Error interno del servidor',
+        data: null
+      };
+    }
+  }
+
+  async searchJobsByProfession(searchParams: SearchJobsByProfessionDto) {
+    try {
+      const { professions, category, urgency, status, page = 1, limit = 10 } = searchParams;
+      const skip = (page - 1) * limit;
+
+      // Construir filtros dinámicos
+      const where: any = {};
+
+      // Filtro por profesiones
+      if (professions && professions.length > 0) {
+        // Buscar trabajos que contengan alguna de las profesiones especificadas
+        const professionNames = professions.map(prof => prof.name).filter(name => name);
+        const professionIds = professions.map(prof => prof.id).filter(id => id);
+        
+        if (professionNames.length > 0 || professionIds.length > 0) {
+          where.OR = [];
+          
+          // Buscar por nombres de profesiones
+          professionNames.forEach(name => {
+            where.OR.push({
+              professions: {
+                path: '$',
+                string_contains: name
+              }
+            });
+          });
+          
+          // Buscar por IDs de profesiones
+          professionIds.forEach(id => {
+            where.OR.push({
+              professions: {
+                path: '$',
+                string_contains: `"id":${id}`
+              }
+            });
+          });
+        }
+      }
+
+      // Filtros adicionales
+      if (category) {
+        where.category = {
+          contains: category,
+          mode: 'insensitive'
+        };
+      }
+      if (urgency) {
+        where.urgency = urgency;
+      }
+      if (status) {
+        where.status = status;
+      }
+
+      const jobs = await this.prisma.job.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              profilePhoto: true,
+              rating: true,
+              reviewsCount: true
+            }
+          }
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        skip,
+        take: limit
+      });
+
+      const total = await this.prisma.job.count({ where });
+
+      return {
+        status: 'success',
+        message: 'Trabajos filtrados por profesión obtenidos exitosamente',
+        data: {
+          jobs,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error buscando trabajos por profesión:', error);
       return {
         status: 'error',
         message: 'Error interno del servidor',
