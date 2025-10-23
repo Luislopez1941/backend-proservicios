@@ -698,8 +698,12 @@ export class JobService {
             }
           ];
           
+          // Si ya hay filtros OR, combinarlos con AND
           if (where.OR) {
-            where.AND = [where.OR, { OR: locationFilters }];
+            where.AND = [
+              { OR: where.OR },
+              { OR: locationFilters }
+            ];
             delete where.OR;
           } else {
             where.OR = locationFilters;
@@ -735,9 +739,15 @@ export class JobService {
             });
           });
 
+          // Si ya hay filtros OR o AND, combinarlos
           if (where.OR) {
-            where.AND = [where.OR, { OR: professionFilters }];
+            where.AND = [
+              { OR: where.OR },
+              { OR: professionFilters }
+            ];
             delete where.OR;
+          } else if (where.AND) {
+            where.AND.push({ OR: professionFilters });
           } else {
             where.OR = professionFilters;
           }
