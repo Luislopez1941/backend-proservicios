@@ -738,41 +738,55 @@ export class JobService {
           });
         }
         
-        // Búsqueda por descripción o main_text - SIMPLIFICADO
+        // Búsqueda por descripción o main_text - MEJORADO
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
           console.log('🔍 DEBUG - Agregando filtro por texto:', searchText);
           
-          // Buscar solo en el campo location básico primero
-          locationConditions.push({
-            location: {
-              contains: searchText,
-              mode: 'insensitive'
+          // Extraer partes del texto para búsqueda más flexible
+          const textParts = searchText?.split(',').map(part => part.trim()) || [];
+          console.log('🔍 DEBUG - Partes del texto:', textParts);
+          
+          // Buscar en el campo location básico con cada parte
+          textParts.forEach(part => {
+            if (part.length > 2) { // Solo partes significativas
+              console.log('🔍 DEBUG - Buscando parte en location:', part);
+              locationConditions.push({
+                location: {
+                  contains: part,
+                  mode: 'insensitive'
+                }
+              });
             }
           });
           
-          // También buscar en campos específicos
-          locationConditions.push({
-            OR: [
-              {
-                location_address: {
-                  contains: searchText,
-                  mode: 'insensitive'
-                }
-              },
-              {
-                location_city: {
-                  contains: searchText,
-                  mode: 'insensitive'
-                }
-              },
-              {
-                location_state: {
-                  contains: searchText,
-                  mode: 'insensitive'
-                }
-              }
-            ]
+          // También buscar en campos específicos con cada parte
+          textParts.forEach(part => {
+            if (part.length > 2) {
+              console.log('🔍 DEBUG - Buscando parte en campos específicos:', part);
+              locationConditions.push({
+                OR: [
+                  {
+                    location_address: {
+                      contains: part,
+                      mode: 'insensitive'
+                    }
+                  },
+                  {
+                    location_city: {
+                      contains: part,
+                      mode: 'insensitive'
+                    }
+                  },
+                  {
+                    location_state: {
+                      contains: part,
+                      mode: 'insensitive'
+                    }
+                  }
+                ]
+              });
+            }
           });
         }
 
