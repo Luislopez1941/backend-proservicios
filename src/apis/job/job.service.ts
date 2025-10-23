@@ -707,7 +707,7 @@ export class JobService {
         }
       }
 
-      // Filtro por ubicación
+      // Filtro por ubicación - VERSIÓN SIMPLIFICADA
       if (location) {
         const locationConditions: any[] = [];
         
@@ -718,9 +718,19 @@ export class JobService {
           });
         }
         
-        // Búsqueda por descripción o main_text
+        // Búsqueda por descripción o main_text - SIMPLIFICADO
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
+          
+          // Buscar solo en el campo location básico primero
+          locationConditions.push({
+            location: {
+              contains: searchText,
+              mode: 'insensitive'
+            }
+          });
+          
+          // También buscar en campos específicos
           locationConditions.push({
             OR: [
               {
@@ -740,24 +750,18 @@ export class JobService {
                   contains: searchText,
                   mode: 'insensitive'
                 }
-              },
-              {
-                location: {
-                  contains: searchText,
-                  mode: 'insensitive'
-                }
               }
             ]
           });
         }
 
         if (locationConditions.length > 0) {
-          where.AND = where.AND || [];
-          where.AND.push({ OR: locationConditions });
+          where.OR = where.OR || [];
+          where.OR.push({ OR: locationConditions });
         }
       }
 
-      // Filtro por profesiones
+      // Filtro por profesiones - VERSIÓN SIMPLIFICADA
       if (professions && professions.length > 0) {
         const professionNames = professions.map(prof => prof.name).filter(name => name);
         const professionIds = professions.map(prof => prof.id).filter(id => id);
@@ -786,8 +790,8 @@ export class JobService {
           });
 
           if (professionFilters.length > 0) {
-            where.AND = where.AND || [];
-            where.AND.push({ OR: professionFilters });
+            where.OR = where.OR || [];
+            where.OR.push({ OR: professionFilters });
           }
         }
       }
