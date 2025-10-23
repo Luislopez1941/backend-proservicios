@@ -21,6 +21,12 @@ export class JobController {
     return this.jobService.create(createJobDto);
   }
 
+  @Get('debug/all')
+  @ApiOperation({ summary: 'Debug - Ver todos los trabajos', description: 'Endpoint temporal para debuggear datos' })
+  async debugAllJobs() {
+    return this.jobService.debugAllJobs();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Obtener todos los trabajos', description: 'Obtiene una lista de todos los trabajos' })
   @ApiResponse({ status: 200, description: 'Lista de trabajos obtenida exitosamente' })

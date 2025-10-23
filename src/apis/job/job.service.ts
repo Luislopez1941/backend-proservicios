@@ -131,8 +131,48 @@ export class JobService {
     }
   }
 
+  async debugAllJobs() {
+    try {
+      const jobs = await this.prisma.job.findMany({
+        select: {
+          id: true,
+          title: true,
+          location: true,
+          location_place_id: true,
+          location_address: true,
+          location_city: true,
+          location_state: true,
+          professions: true,
+          created_at: true
+        },
+        orderBy: {
+          created_at: 'desc'
+        }
+      });
+
+      console.log('🔍 DEBUG - Todos los trabajos:', JSON.stringify(jobs, null, 2));
+
+      return {
+        status: 'success',
+        message: 'Datos de debug obtenidos',
+        data: jobs
+      };
+    } catch (error) {
+      console.error('❌ Error en debug:', error);
+      return {
+        status: 'error',
+        message: 'Error interno del servidor',
+        data: null
+      };
+    }
+  }
+
   async findOne(id: number) {
     try {
+      if (!id || isNaN(id)) {
+        throw new Error('ID inválido');
+      }
+      
       const job = await this.prisma.job.findUnique({
         where: { id },
         include: {
