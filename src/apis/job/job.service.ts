@@ -730,7 +730,7 @@ export class JobService {
         
         const locationConditions: any[] = [];
         
-        // Búsqueda por place_id (Google Places)
+        // Búsqueda por place_id (Google Places) - SOLO si existe en BD
         if (location.place_id) {
           console.log('🔍 DEBUG - Agregando filtro por place_id:', location.place_id);
           locationConditions.push({
@@ -738,7 +738,7 @@ export class JobService {
           });
         }
         
-        // Búsqueda por descripción o main_text - MEJORADO
+        // Búsqueda por descripción o main_text - SIMPLIFICADO
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
           console.log('🔍 DEBUG - Agregando filtro por texto:', searchText);
@@ -759,42 +759,13 @@ export class JobService {
               });
             }
           });
-          
-          // También buscar en campos específicos con cada parte
-          textParts.forEach(part => {
-            if (part.length > 2) {
-              console.log('🔍 DEBUG - Buscando parte en campos específicos:', part);
-              locationConditions.push({
-                OR: [
-                  {
-                    location_address: {
-                      contains: part,
-                      mode: 'insensitive'
-                    }
-                  },
-                  {
-                    location_city: {
-                      contains: part,
-                      mode: 'insensitive'
-                    }
-                  },
-                  {
-                    location_state: {
-                      contains: part,
-                      mode: 'insensitive'
-                    }
-                  }
-                ]
-              });
-            }
-          });
         }
 
         console.log('🔍 DEBUG - Condiciones de ubicación:', JSON.stringify(locationConditions, null, 2));
 
         if (locationConditions.length > 0) {
-          where.AND = where.AND || [];
-          where.AND.push({ OR: locationConditions });
+          where.OR = where.OR || [];
+          where.OR.push({ OR: locationConditions });
           console.log('🔍 DEBUG - WHERE después de ubicación:', JSON.stringify(where, null, 2));
         }
       }
@@ -837,8 +808,8 @@ export class JobService {
           console.log('🔍 DEBUG - Filtros de profesiones:', JSON.stringify(professionFilters, null, 2));
 
           if (professionFilters.length > 0) {
-            where.AND = where.AND || [];
-            where.AND.push({ OR: professionFilters });
+            where.OR = where.OR || [];
+            where.OR.push({ OR: professionFilters });
             console.log('🔍 DEBUG - WHERE después de profesiones:', JSON.stringify(where, null, 2));
           }
         }
