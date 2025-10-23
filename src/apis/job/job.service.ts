@@ -355,6 +355,37 @@ export class JobService {
 
       // Filtro por ubicación
       if (location) {
+        // Búsqueda por place_id (Google Places)
+        if (location.place_id) {
+          where.location_place_id = location.place_id;
+        }
+        
+        // Búsqueda por descripción o main_text
+        if (location.description || location.main_text) {
+          const searchText = location.description || location.main_text;
+          where.OR = [
+            {
+              location_address: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            },
+            {
+              location_city: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            },
+            {
+              location_state: {
+                contains: searchText,
+                mode: 'insensitive'
+              }
+            }
+          ];
+        }
+        
+        // Búsqueda por campos específicos
         if (location.location_city) {
           where.location_city = {
             contains: location.location_city,
@@ -376,8 +407,8 @@ export class JobService {
         if (location.location_postal_code) {
           where.location_postal_code = location.location_postal_code;
         }
-        if (location.location_place_id) {
-          where.location_place_id = location.location_place_id;
+        if (location.place_id) {
+          where.location_place_id = location.place_id;
         }
         if (location.location_lat && location.location_lng) {
           // Búsqueda por proximidad (radio de 10km)

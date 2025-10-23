@@ -3,6 +3,28 @@ import { Type } from 'class-transformer';
 
 export class LocationSearchDto {
   @IsOptional()
+  @IsString({ message: 'La descripción debe ser un string' })
+  description?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El main_text debe ser un string' })
+  main_text?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El secondary_text debe ser un string' })
+  secondary_text?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El place_id debe ser un string' })
+  place_id?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Los tipos deben ser un array' })
+  @IsString({ each: true, message: 'Cada tipo debe ser un string' })
+  types?: string[];
+
+  // Campos adicionales para búsqueda más específica
+  @IsOptional()
   @IsString({ message: 'La dirección debe ser un string' })
   location_address?: string;
 
@@ -19,10 +41,6 @@ export class LocationSearchDto {
   @Max(180, { message: 'La longitud debe estar entre -180 y 180' })
   @Type(() => Number)
   location_lng?: number;
-
-  @IsOptional()
-  @IsString({ message: 'El place_id debe ser un string' })
-  location_place_id?: string;
 
   @IsOptional()
   @IsString({ message: 'La ciudad debe ser un string' })
