@@ -669,45 +669,51 @@ export class JobService {
 
       // Filtro por ubicación
       if (location) {
+        const locationConditions: any[] = [];
+        
         // Búsqueda por place_id (Google Places)
         if (location.place_id) {
-          where.location_place_id = location.place_id;
+          locationConditions.push({
+            location_place_id: location.place_id
+          });
         }
         
         // Búsqueda por descripción o main_text
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
-          const locationFilters = [
-            {
-              location_address: {
-                contains: searchText,
-                mode: 'insensitive'
+          locationConditions.push({
+            OR: [
+              {
+                location_address: {
+                  contains: searchText,
+                  mode: 'insensitive'
+                }
+              },
+              {
+                location_city: {
+                  contains: searchText,
+                  mode: 'insensitive'
+                }
+              },
+              {
+                location_state: {
+                  contains: searchText,
+                  mode: 'insensitive'
+                }
+              },
+              {
+                location: {
+                  contains: searchText,
+                  mode: 'insensitive'
+                }
               }
-            },
-            {
-              location_city: {
-                contains: searchText,
-                mode: 'insensitive'
-              }
-            },
-            {
-              location_state: {
-                contains: searchText,
-                mode: 'insensitive'
-              }
-            }
-          ];
-          
-          // Si ya hay filtros OR, combinarlos con AND
-          if (where.OR) {
-            where.AND = [
-              { OR: where.OR },
-              { OR: locationFilters }
-            ];
-            delete where.OR;
-          } else {
-            where.OR = locationFilters;
-          }
+            ]
+          });
+        }
+
+        if (locationConditions.length > 0) {
+          where.AND = where.AND || [];
+          where.AND.push({ OR: locationConditions });
         }
       }
 
@@ -739,20 +745,15 @@ export class JobService {
             });
           });
 
-          // Si ya hay filtros OR o AND, combinarlos
-          if (where.OR) {
-            where.AND = [
-              { OR: where.OR },
-              { OR: professionFilters }
-            ];
-            delete where.OR;
-          } else if (where.AND) {
+          if (professionFilters.length > 0) {
+            where.AND = where.AND || [];
             where.AND.push({ OR: professionFilters });
-          } else {
-            where.OR = professionFilters;
           }
         }
       }
+
+      // Debug: Log de la consulta
+      console.log('🔍 Consulta WHERE:', JSON.stringify(where, null, 2));
 
       const jobs = await this.prisma.job.findMany({
         where,
