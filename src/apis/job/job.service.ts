@@ -724,7 +724,7 @@ export class JobService {
         }
       }
 
-      // Filtro por ubicación - VERSIÓN SIMPLIFICADA
+      // Filtro por ubicación - VERSIÓN MEJORADA CON GOOGLE MAPS
       if (location) {
         console.log('🔍 DEBUG - Procesando ubicación:', JSON.stringify(location, null, 2));
         
@@ -738,7 +738,7 @@ export class JobService {
           });
         }
         
-        // Búsqueda por descripción o main_text - SIMPLIFICADO
+        // Búsqueda inteligente por ubicación usando Google Maps data
         if (location.description || location.main_text) {
           const searchText = location.description || location.main_text;
           console.log('🔍 DEBUG - Agregando filtro por texto:', searchText);
@@ -747,16 +747,53 @@ export class JobService {
           const textParts = searchText?.split(',').map(part => part.trim()) || [];
           console.log('🔍 DEBUG - Partes del texto:', textParts);
           
-          // Buscar en el campo location básico con cada parte
+          // Buscar en múltiples campos de ubicación para cada parte
           textParts.forEach(part => {
             if (part.length > 2) { // Solo partes significativas
-              console.log('🔍 DEBUG - Buscando parte en location:', part);
-              locationConditions.push({
+              console.log('🔍 DEBUG - Buscando parte en múltiples campos:', part);
+              
+              // Crear condiciones OR para esta parte en todos los campos de ubicación
+              const partConditions: any[] = [];
+              
+              // Buscar en el campo location básico
+              partConditions.push({
                 location: {
                   contains: part,
                   mode: 'insensitive'
                 }
               });
+              
+              // Buscar en campos específicos de Google Maps
+              partConditions.push({
+                location_city: {
+                  contains: part,
+                  mode: 'insensitive'
+                }
+              });
+              
+              partConditions.push({
+                location_state: {
+                  contains: part,
+                  mode: 'insensitive'
+                }
+              });
+              
+              partConditions.push({
+                location_country: {
+                  contains: part,
+                  mode: 'insensitive'
+                }
+              });
+              
+              partConditions.push({
+                location_address: {
+                  contains: part,
+                  mode: 'insensitive'
+                }
+              });
+              
+              // Agregar todas las condiciones para esta parte
+              locationConditions.push({ OR: partConditions });
             }
           });
         }
