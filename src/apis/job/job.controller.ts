@@ -58,23 +58,15 @@ export class JobController {
     return this.jobService.findByCategory(category);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener trabajo por ID', description: 'Obtiene un trabajo específico por su ID' })
+  @Get('get-job-by-id/:id')
+  @ApiOperation({ summary: 'Obtener trabajo por ID', description: 'Obtiene un trabajo específico por su ID con información completa' })
   @ApiResponse({ status: 200, description: 'Trabajo obtenido exitosamente' })
   @ApiResponse({ status: 404, description: 'Trabajo no encontrado' })
-  findOne(@Param('id') id: string) {
+  getJobById(@Param('id') id: string) {
     return this.jobService.findOne(+id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Actualizar trabajo', description: 'Actualiza un trabajo existente' })
-  @ApiBody({ type: UpdateJobDto })
-  @ApiResponse({ status: 200, description: 'Trabajo actualizado exitosamente' })
-  @ApiResponse({ status: 404, description: 'Trabajo no encontrado' })
-  update(@Param('id') id: string, @Body() updateJobDto: UpdateJobDto) {
-    return this.jobService.update(+id, updateJobDto);
-  }
-
+ 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar trabajo', description: 'Elimina un trabajo existente' })
   @ApiResponse({ status: 200, description: 'Trabajo eliminado exitosamente' })
