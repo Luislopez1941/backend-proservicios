@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/s
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { UpdateJobStatusDto } from './dto/update-job-status.dto';
 import { SearchJobsDto } from './dto/search-jobs.dto';
 import { SearchJobsByLocationDto } from './dto/search-jobs-location.dto';
 import { SearchJobsByProfessionDto } from './dto/search-jobs-profession.dto';
@@ -64,6 +65,16 @@ export class JobController {
   @ApiResponse({ status: 404, description: 'Trabajo no encontrado' })
   getJobById(@Param('id') id: string) {
     return this.jobService.findOne(+id);
+  }
+
+  @Patch('update-status/:id')
+  @ApiOperation({ summary: 'Actualizar estado del trabajo', description: 'Actualiza el estado de un trabajo específico. Cuando el status es "accepted", se requiere el receiver_id para vincular el trabajo al usuario receptor.' })
+  @ApiBody({ type: UpdateJobStatusDto })
+  @ApiResponse({ status: 200, description: 'Estado del trabajo actualizado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Trabajo no encontrado' })
+  @ApiResponse({ status: 400, description: 'Estado inválido o receiver_id requerido para status accepted' })
+  updateStatus(@Param('id') id: string, @Body() updateJobStatusDto: UpdateJobStatusDto) {
+    return this.jobService.updateStatus(+id, updateJobStatusDto.status, updateJobStatusDto.receiver_id);
   }
 
  

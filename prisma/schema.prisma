@@ -23,9 +23,21 @@ enum JobUrgency {
 
 enum JobStatus {
   open
+  active
   in_progress
   completed
   cancelled
+  canceled
+  accepted
+  finished_work
+  completed_work
+  payment_completed
+  confirmed_payment
+  payment_pending
+  payment_failed
+  payment_refunded
+  payment_expired
+  payment_cancelled
 }
 
 enum ChatType {
@@ -129,13 +141,15 @@ model User {
 model Job {
   id          Int        @id @default(autoincrement())
   id_user     Int
+  receiver_id Int?
+  issuer_id   Int?
   title       String     @db.VarChar(255)
   description String     @db.Text
   category    String     @db.VarChar(255)
   budget      Json
   location    String     @db.VarChar(255)
   urgency     JobUrgency @default(normal)
-  status      JobStatus  @default(open)
+  status      JobStatus  @default(active)
   professions Json
   images      Json?
 
@@ -148,6 +162,14 @@ model Job {
   workType       String?  @db.VarChar(255)
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now())
+
+  //////////////////////Rating///////////////////////////
+  rating_status_reviwer Boolean      @default(false)
+  rating_status_receiver Boolean      @default(false)
+  review_status_reviewer Boolean      @default(false)
+  review_status_receiver Boolean      @default(false)
+  rating_reviewer        Int?         // Calificación de 1 a 5
+  rating_receiver        Int?         // Calificación de 1 a 5
 
   // Google Maps Location Data
   location_address  String? @db.Text

@@ -5,7 +5,7 @@ CREATE TYPE "public"."UserType" AS ENUM ('client', 'worker');
 CREATE TYPE "public"."JobUrgency" AS ENUM ('normal', 'urgent');
 
 -- CreateEnum
-CREATE TYPE "public"."JobStatus" AS ENUM ('open', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE "public"."JobStatus" AS ENUM ('open', 'active', 'in_progress', 'completed', 'cancelled', 'canceled', 'accepted', 'finished_work', 'completed_work', 'payment_completed', 'confirmed_payment', 'payment_pending', 'payment_failed', 'payment_refunded', 'payment_expired', 'payment_cancelled');
 
 -- CreateEnum
 CREATE TYPE "public"."ChatType" AS ENUM ('private', 'group');
@@ -71,13 +71,15 @@ CREATE TABLE "public"."users" (
 CREATE TABLE "public"."jobs" (
     "id" SERIAL NOT NULL,
     "id_user" INTEGER NOT NULL,
+    "receiver_id" INTEGER,
+    "issuer_id" INTEGER,
     "title" VARCHAR(255) NOT NULL,
     "description" TEXT NOT NULL,
     "category" VARCHAR(255) NOT NULL,
     "budget" JSONB NOT NULL,
     "location" VARCHAR(255) NOT NULL,
     "urgency" "public"."JobUrgency" NOT NULL DEFAULT 'normal',
-    "status" "public"."JobStatus" NOT NULL DEFAULT 'open',
+    "status" "public"."JobStatus" NOT NULL DEFAULT 'active',
     "professions" JSONB NOT NULL,
     "images" JSONB,
     "price" VARCHAR(255) NOT NULL,
@@ -89,6 +91,12 @@ CREATE TABLE "public"."jobs" (
     "workType" VARCHAR(255),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "rating_status_reviwer" BOOLEAN NOT NULL DEFAULT false,
+    "rating_status_receiver" BOOLEAN NOT NULL DEFAULT false,
+    "review_status_reviewer" BOOLEAN NOT NULL DEFAULT false,
+    "review_status_receiver" BOOLEAN NOT NULL DEFAULT false,
+    "rating_reviewer" INTEGER,
+    "rating_receiver" INTEGER,
     "location_address" TEXT,
     "location_lat" DOUBLE PRECISION,
     "location_lng" DOUBLE PRECISION,

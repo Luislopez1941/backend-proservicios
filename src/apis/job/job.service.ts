@@ -905,4 +905,111 @@ export class JobService {
       };
     }
   }
+
+  async updateStatus(id: number, status: string, receiver_id?: number) {
+    try {
+      console.log(`🔄 Actualizando status del trabajo ${id} a: ${status}`);
+      if (receiver_id) {
+        console.log(`🔄 Vincular receiver_id: ${receiver_id} al trabajo ${id}`);
+      }
+
+      // Verificar que el trabajo existe
+      const existingJob = await this.prisma.job.findUnique({
+        where: { id }
+      });
+
+      if (!existingJob) {
+        return {
+          status: 'error',
+          message: 'Trabajo no encontrado',
+          data: null
+        };
+      }
+
+      // Validar que el status es válido
+      const validStatuses = ['open', 'in_progress', 'completed', 'cancelled', 'accepted'];
+      if (!validStatuses.includes(status)) {
+        return {
+          status: 'error',
+          message: 'Estado inválido. Los estados válidos son: open, in_progress, completed, cancelled, accepted',
+          data: null
+        };
+      }
+
+      // Validación especial para status "accepted"
+      if (status === 'accepted') {
+        if (!receiver_id) {
+          return {
+            status: 'error',
+            message: 'El receiver_id es requerido cuando el status es "accepted"',
+            data: null
+          };
+        }
+
+        // Verificar que el receiver_id existe
+        const receiver = await this.prisma.user.findUnique({
+          where: { id: receiver_id }
+        });
+
+        if (!receiver) {
+          return {
+            status: 'error',
+            message: 'El usuario receiver_id no existe',
+            data: null
+          };
+        }
+      }
+
+      // Preparar datos para actualizar
+      const updateData: any = { 
+        status: status as any,
+        updated_at: new Date()
+      };
+
+      // Si el status es "accepted" y se proporciona receiver_id, vincularlo
+      if (status === 'accepted' && receiver_id) {
+        updateData.receiver_id = receiver_id;
+        console.log(`✅ Vincular receiver_id ${receiver_id} al trabajo ${id}`);
+      }
+
+      // Actualizar el trabajo
+      const updatedJob = await this.prisma.job.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              profilePhoto: true,
+              rating: true,
+              reviewsCount: true
+            }
+          }
+        }
+      });
+
+      console.log(`✅ Status del trabajo ${id} actualizado exitosamente a: ${status}`);
+      if (status === 'accepted' && receiver_id) {
+        console.log(`✅ Trabajo ${id} vinculado al receiver_id: ${receiver_id}`);
+      }
+
+      return {
+        status: 'success',
+        message: status === 'accepted' && receiver_id 
+          ? 'Estado del trabajo actualizado exitosamente y vinculado al usuario receptor'
+          : 'Estado del trabajo actualizado exitosamente',
+        data: updatedJob
+      };
+
+    } catch (error) {
+      console.error('❌ Error actualizando status del trabajo:', error);
+      return {
+        status: 'error',
+        message: 'Error interno del servidor',
+        data: null
+      };
+    }
+  }
 }
