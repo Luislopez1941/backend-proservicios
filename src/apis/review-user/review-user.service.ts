@@ -11,7 +11,7 @@ export class ReviewUserService {
     try {
       console.log('🔍 DEBUG: Datos recibidos:', createReviewUserDto);
       
-      const { proposalId, proposal_id, reviewer_id, receiver_id, data } = createReviewUserDto;
+      const { proposalId, proposal_id, reviewer_id, receiver_id, user_review_id, data } = createReviewUserDto;
 
       // Usar proposalId o proposal_id (el que esté definido)
       const actualProposalId = proposalId || proposal_id;
@@ -90,8 +90,10 @@ export class ReviewUserService {
 
       // Crear la reseña usando los datos de data
       console.log('🔍 DEBUG: Creando reseña con userId:', userId);
+      console.log('🔍 DEBUG: user_review_id:', user_review_id);
       console.log('🔍 DEBUG: Datos de la reseña:', {
         user_id: userId,
+        user_review_id: user_review_id || null,
         comment: data.comment,
         job_id: data.job_id || null
       });
@@ -99,6 +101,7 @@ export class ReviewUserService {
       const review = await this.prisma.review.create({
         data: {
           user_id: userId,
+          user_review_id: user_review_id || null,
           comment: data.comment,
           job_id: data.job_id || null
         },
@@ -153,10 +156,34 @@ export class ReviewUserService {
         }
       });
 
+      // Obtener información del usuario siendo calificado (user_review_id) si existe
+      const reviewsWithReviewedUser = await Promise.all(
+        reviews.map(async (review: any) => {
+          let reviewedUser: any = null;
+          if (review.user_review_id) {
+            reviewedUser = await this.prisma.user.findUnique({
+              where: { id: review.user_review_id },
+              select: {
+                id: true,
+                first_name: true,
+                first_surname: true,
+                profilePhoto: true,
+                email: true,
+                type_user: true
+              }
+            });
+          }
+          return {
+            ...review,
+            reviewedUser
+          };
+        })
+      );
+
       return {
         status: 'success',
         message: 'Reseñas obtenidas exitosamente',
-        data: reviews
+        data: reviewsWithReviewedUser
       };
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -188,10 +215,29 @@ export class ReviewUserService {
         throw new NotFoundException('Reseña no encontrada');
       }
 
+      // Obtener información del usuario siendo calificado
+      let reviewedUser: any = null;
+      if ((review as any).user_review_id) {
+        reviewedUser = await this.prisma.user.findUnique({
+          where: { id: (review as any).user_review_id },
+          select: {
+            id: true,
+            first_name: true,
+            first_surname: true,
+            profilePhoto: true,
+            email: true,
+            type_user: true
+          }
+        });
+      }
+
       return {
         status: 'success',
         message: 'Reseña obtenida exitosamente',
-        data: review
+        data: {
+          ...review,
+          reviewedUser
+        }
       };
     } catch (error) {
       console.error('Error fetching review:', error);
@@ -222,10 +268,34 @@ export class ReviewUserService {
         }
       });
 
+      // Obtener información del usuario siendo calificado (user_review_id) si existe
+      const reviewsWithReviewedUser = await Promise.all(
+        reviews.map(async (review: any) => {
+          let reviewedUser: any = null;
+          if (review.user_review_id) {
+            reviewedUser = await this.prisma.user.findUnique({
+              where: { id: review.user_review_id },
+              select: {
+                id: true,
+                first_name: true,
+                first_surname: true,
+                profilePhoto: true,
+                email: true,
+                type_user: true
+              }
+            });
+          }
+          return {
+            ...review,
+            reviewedUser
+          };
+        })
+      );
+
       return {
         status: 'success',
         message: 'Reseñas del usuario obtenidas exitosamente',
-        data: reviews
+        data: reviewsWithReviewedUser
       };
     } catch (error) {
       console.error('Error fetching user reviews:', error);
@@ -255,7 +325,7 @@ export class ReviewUserService {
         }
       });
 
-      // Buscar las propuestas relacionadas con las reseñas
+      // Buscar las propuestas relacionadas con las reseñas y el usuario siendo calificado
       const reviewsWithProposals = await Promise.all(
         reviews.map(async (review) => {
           let proposal: any = null;
@@ -287,9 +357,26 @@ export class ReviewUserService {
             });
           }
 
+          // Obtener información del usuario siendo calificado
+          let reviewedUser: any = null;
+          if ((review as any).user_review_id) {
+            reviewedUser = await this.prisma.user.findUnique({
+              where: { id: (review as any).user_review_id },
+              select: {
+                id: true,
+                first_name: true,
+                first_surname: true,
+                profilePhoto: true,
+                email: true,
+                type_user: true
+              }
+            });
+          }
+
           return {
             ...review,
-            proposal
+            proposal,
+            reviewedUser
           };
         })
       );

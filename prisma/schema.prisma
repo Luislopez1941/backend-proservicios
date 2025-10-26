@@ -275,9 +275,10 @@ model JobProposal {
 
 model Review {
   id          Int      @id @default(autoincrement())
-  user_id     Int      // Usuario que da la reseña
+  user_id     Int      // Usuario que recibe la reseña
+  user_review_id Int?      // Usuario que da la reseña
   comment     String?  @db.Text // Comentario opcional
-  job_id      Int?     // ID del trabajo relacionado (opcional)
+  job_id      Int?     // ID del trabajo al que se le da la reseña (opcional)
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
 

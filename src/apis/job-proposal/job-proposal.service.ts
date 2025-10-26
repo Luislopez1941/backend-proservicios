@@ -395,6 +395,7 @@ export class JobProposalService {
           review = await this.prisma.review.create({
             data: {
               user_id: raterId,      // Quien está calificando
+              user_review_id: ratedUserId,  // Usuario siendo calificado
               job_id: proposalId,
               comment: `Calificación automática del trabajo`
             }

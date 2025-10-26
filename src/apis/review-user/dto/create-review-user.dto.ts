@@ -21,6 +21,11 @@ export class CreateReviewUserDto {
   @IsOptional()
   receiver_id?: number; // Usuario que recibe la reseña (opcional)
 
+  @ValidateIf((o) => o.user_review_id !== undefined && o.user_review_id !== null)
+  @IsInt()
+  @IsOptional()
+  user_review_id?: number; // Usuario que está siendo calificado
+
   @IsObject()
   @IsNotEmpty()
   data: {
