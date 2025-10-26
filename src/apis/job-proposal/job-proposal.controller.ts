@@ -22,10 +22,11 @@ export class JobProposalController {
     return this.jobProposalService.getUserProposals(+userId);
   }
 
-  @Get('debug/all')
-  getAllProposalsDebug() {
-    return this.jobProposalService.getAllProposalsDebug();
+  @Get('proposal-confirmed_payment/:userId')
+  getProposalConfirmedPayment(@Param('userId') userId: string) {
+    return this.jobProposalService.getProposalsByConfirmedPayment(+userId);
   }
+
 
   @Put(':id/status')
   updateProposalStatus(@Param('id') id: string, @Body() body: { status: string }) {

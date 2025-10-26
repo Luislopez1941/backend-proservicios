@@ -628,6 +628,94 @@ export class JobProposalService {
     }
   }
 
+  async getProposalsByConfirmedPayment(userId: number) {
+    try {
+      const proposals = await this.prisma.jobProposal.findMany({
+        where: {
+          AND: [
+            { status: 'confirmed_payment' },
+            {
+              OR: [
+                { receiver_id: userId },
+                { issuer_id: userId }
+              ]
+            }
+          ]
+        },
+        select: {
+          id: true,
+          message_id: true,
+          user_id: true,
+          issuer_id: true,
+          receiver_id: true,
+          title: true,
+          description: true,
+          images: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          rating_status_reviwer: true,
+          rating_status_receiver: true,
+          review_status_reviewer: true,
+          review_status_receiver: true,
+          rating_reviewer: true,
+          rating_receiver: true,
+          price_total: true,
+          currency: true,
+          accepts_payment_methods: true,
+          message: {
+            include: {
+              issuer: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  email: true,
+                  profilePhoto: true,
+                  type_user: true
+                }
+              },
+              receiver: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  first_surname: true,
+                  email: true,
+                  profilePhoto: true,
+                  type_user: true
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              email: true,
+              profilePhoto: true,
+              type_user: true
+            }
+          }
+        } as any,
+        orderBy: { created_at: 'desc' }
+      });
+
+      return {
+        status: 'success',
+        message: `Se encontraron ${proposals.length} propuestas con pago confirmado`,
+        data: proposals
+      };
+    } catch (error) {
+      console.error('Error al obtener propuestas con pago confirmado:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener propuestas con pago confirmado',
+        data: null
+      };
+    }
+  }
+
   async getAllProposalsDebug() {
     try {
       const allProposals = await this.prisma.jobProposal.findMany({
