@@ -166,6 +166,14 @@ export class CompleteUserDto {
   verified?: boolean;
 
   @ApiProperty({ 
+    description: 'Disponibilidad en calendario del usuario', 
+    example: { monday: [{ start: '09:00', end: '17:00' }], tuesday: [{ start: '09:00', end: '17:00' }] },
+    required: false 
+  })
+  @IsOptional()
+  calendar_availability?: any;
+
+  @ApiProperty({ 
     description: 'Fecha de nacimiento del usuario', 
     example: '1990-05-15T00:00:00.000Z', 
     required: false 

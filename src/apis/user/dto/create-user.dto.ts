@@ -198,4 +198,12 @@ export class CreateUserDto {
   @IsBoolean({ message: 'Los términos y condiciones deben ser un booleano' })
   @IsOptional()
   acceptTerms?: boolean;
+
+  @ApiProperty({ 
+    description: 'Disponibilidad en calendario del usuario', 
+    example: { monday: [{ start: '09:00', end: '17:00' }], tuesday: [{ start: '09:00', end: '17:00' }] },
+    required: false 
+  })
+  @IsOptional()
+  calendar_availability?: any;
 }

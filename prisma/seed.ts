@@ -88,7 +88,8 @@ async function seedDatabase() {
       'Albañil', 'Plomero', 'Electricista', 'Carpintero', 'Pintor',
       'Jardinero', 'Mecánico', 'Cerrajero', 'Soldador', 'Técnico en Aires Acondicionados',
       'Limpieza del Hogar', 'Cocinero(a)', 'Sastre/Costurero(a)', 'Peluquero(a)', 'Masajista',
-      'Técnico en Computación', 'Fotógrafo', 'Diseñador Gráfico', 'Profesor Particular', 'Entrenador Personal'
+      'Técnico en Computación', 'Fotógrafo', 'Diseñador Gráfico', 'Profesor Particular', 'Entrenador Personal', 'Manicurista', 'Lashista',
+      'Estilista', 'Maquillista', 'Peluquero', 'Masajista', 'Esteticista', 'Nutricionista', 'Psicólogo', 'Entrenador Personal', 'Manejista',
     ];
 
     // Insertar profesiones

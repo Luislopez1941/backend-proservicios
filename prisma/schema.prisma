@@ -85,6 +85,8 @@ model User {
   starts           Json?
   verified         Boolean @default(false)
 
+  calendar_availability Json?
+
   birthdate       DateTime?
   completed_works Int       @default(0)
   paid_jobs       Int       @default(0)

@@ -338,6 +338,7 @@ export class UserService {
           background: true,
           workPhotos: true,
           professions: true,
+          calendar_availability: true,
           location_address: true,
           location_lat: true,
           location_lng: true,

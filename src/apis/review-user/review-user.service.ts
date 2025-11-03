@@ -141,16 +141,6 @@ export class ReviewUserService {
   async findAll() {
     try {
       const reviews = await this.prisma.review.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          }
-        },
         orderBy: {
           created_at: 'desc'
         }
@@ -198,17 +188,7 @@ export class ReviewUserService {
   async findOne(id: number) {
     try {
       const review = await this.prisma.review.findUnique({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          }
-        }
+        where: { id }
       });
 
       if (!review) {
@@ -253,16 +233,6 @@ export class ReviewUserService {
     try {
       const reviews = await this.prisma.review.findMany({
         where: { user_id: userId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          }
-        },
         orderBy: {
           created_at: 'desc'
         }
@@ -310,16 +280,6 @@ export class ReviewUserService {
   async findReviewsWithProposals() {
     try {
       const reviews = await this.prisma.review.findMany({
-        include: {
-          user: {
-            select: {
-              id: true,
-              first_name: true,
-              first_surname: true,
-              profilePhoto: true
-            }
-          }
-        },
         orderBy: {
           created_at: 'desc'
         }
@@ -327,7 +287,7 @@ export class ReviewUserService {
 
       // Buscar las propuestas relacionadas con las reseñas y el usuario siendo calificado
       const reviewsWithProposals = await Promise.all(
-        reviews.map(async (review) => {
+        reviews.map(async (review: any) => {
           let proposal: any = null;
           
           if (review.job_id) {
