@@ -179,10 +179,10 @@ export class UpdateUserDto {
   workPhotos?: string[];
 
   @ApiProperty({ 
-    description: 'Disponibilidad en calendario del usuario', 
+    description: 'Calendario del usuario', 
     example: { monday: [{ start: '09:00', end: '17:00' }], tuesday: [{ start: '09:00', end: '17:00' }] },
     required: false
   })
   @IsOptional()
-  calendar_availability?: any;
+  calendar?: any;
 }
