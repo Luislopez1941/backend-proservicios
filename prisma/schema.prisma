@@ -81,11 +81,13 @@ model User {
   phone            String  @db.VarChar(255)
   description      String? @default("") @db.Text
   gender           String? @db.VarChar(50)
+  age              Int?
   professions      Json?
   starts           Json?
   verified         Boolean @default(false)
 
   calendar Json?
+  calendar_enabled Boolean @default(false)
 
   birthdate       DateTime?
   completed_works Int       @default(0)
