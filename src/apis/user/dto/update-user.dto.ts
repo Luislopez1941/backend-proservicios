@@ -47,6 +47,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsArray({ message: 'Las profesiones deben ser un array' })
+  @Type(() => Object)
   professions?: any[];
 
   @ApiProperty({ 

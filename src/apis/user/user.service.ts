@@ -383,7 +383,9 @@ export class UserService {
           // Si el primer elemento es un array, extraerlo (caso [[]])
           if (professionsToSave.length > 0 && Array.isArray(professionsToSave[0])) {
             console.log('⚠️ Detectado array anidado, aplanando...');
-            professionsToSave = professionsToSave[0];
+            const innerArray = professionsToSave[0];
+            // Si el array interno tiene contenido, usarlo; si está vacío, usar array vacío
+            professionsToSave = innerArray.length > 0 ? innerArray : [];
           }
           // Asegurarse de que sea un array válido
           finalUpdateData.professions = Array.isArray(professionsToSave) ? professionsToSave : [];

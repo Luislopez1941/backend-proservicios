@@ -82,10 +82,15 @@ export class UserController {
     
     // CORREGIR: Si professions viene como array anidado [[]], aplanarlo aquí
     if (updateUserDto.professions && Array.isArray(updateUserDto.professions)) {
+      // Si es un array anidado como [[]], extraer el array interno
       if (updateUserDto.professions.length > 0 && Array.isArray(updateUserDto.professions[0])) {
         console.log('🔧 Controller: Detectado array anidado, aplanando...');
-        updateUserDto.professions = updateUserDto.professions[0];
+        const innerArray = updateUserDto.professions[0];
+        updateUserDto.professions = innerArray.length > 0 ? innerArray : [];
         console.log('🔧 Controller: Professions aplanado:', JSON.stringify(updateUserDto.professions));
+      } else if (updateUserDto.professions.length === 0) {
+        // Si es un array vacío, mantenerlo así
+        updateUserDto.professions = [];
       }
     }
     
