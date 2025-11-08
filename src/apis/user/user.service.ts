@@ -255,6 +255,14 @@ export class UserService {
 
   async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     try {
+      console.log('🚀 updateUser llamado con:', {
+        id,
+        updateUserDto: JSON.stringify(updateUserDto),
+        professions: JSON.stringify(updateUserDto.professions),
+        professionsType: typeof updateUserDto.professions,
+        isArray: Array.isArray(updateUserDto.professions)
+      });
+      
       // Buscar el usuario
       const existingUser = await this.prisma.user.findUnique({
         where: { id }
@@ -341,26 +349,36 @@ export class UserService {
       
       // Manejar professions correctamente como JSON
       if (professions !== undefined) {
+        console.log('🔍 Professions recibidas en updateUser:', JSON.stringify(professions));
         // Asegurarse de que professions sea un array válido
-        if (Array.isArray(professions) && professions.length > 0) {
+        if (Array.isArray(professions)) {
+          // Guardar el array directamente, incluso si está vacío
           relationData.professions = professions;
-        } else if (Array.isArray(professions) && professions.length === 0) {
-          // Si es un array vacío, guardarlo como array vacío
-          relationData.professions = [];
+          console.log('✅ Professions que se guardarán:', JSON.stringify(relationData.professions));
         } else {
-          // Si es null o undefined, no actualizar el campo
-          // No hacer nada, mantener el valor actual
+          // Si no es un array, convertir a array vacío
+          console.log('⚠️ Professions no es un array, se ignorará');
         }
+      } else {
+        console.log('ℹ️ Professions no está presente en updateUserDto');
       }
+
+      // Preparar datos finales para actualización
+      const finalUpdateData = {
+        ...updateData,
+        ...relationData,
+        ...imageUpdates, // Incluir las URLs de las imágenes procesadas
+      };
+      
+      console.log('📝 Datos finales para actualizar:', JSON.stringify({
+        ...finalUpdateData,
+        password: finalUpdateData.password ? '[HIDDEN]' : undefined
+      }));
 
       // Actualizar el usuario
       const user = await this.prisma.user.update({
         where: { id },
-        data: {
-          ...updateData,
-          ...relationData,
-          ...imageUpdates, // Incluir las URLs de las imágenes procesadas
-        },
+        data: finalUpdateData,
         select: {
           id: true,
           first_name: true,
@@ -383,10 +401,16 @@ export class UserService {
         }
       });
 
+      console.log('📖 Professions después de actualizar (raw):', JSON.stringify(user.professions));
+      console.log('📖 Tipo de professions:', typeof user.professions, Array.isArray(user.professions));
+
       // Normalizar el campo professions para asegurar que sea un array plano
+      const normalizedProfessions = this.normalizeProfessions(user.professions);
+      console.log('✨ Professions normalizadas:', JSON.stringify(normalizedProfessions));
+      
       const normalizedUser = {
         ...user,
-        professions: this.normalizeProfessions(user.professions)
+        professions: normalizedProfessions
       };
 
       return {
