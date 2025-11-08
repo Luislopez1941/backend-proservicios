@@ -347,9 +347,11 @@ export class UserService {
       // Preparar las relaciones para la actualización
       const relationData: any = {};
       
-      // Manejar professions correctamente como JSON
+      // Manejar professions correctamente como JSON (similar a createUser)
+      console.log('🔍 Professions recibidas en updateUser:', JSON.stringify(professions));
+      console.log('🔍 Tipo de professions:', typeof professions, Array.isArray(professions));
+      
       if (professions !== undefined) {
-        console.log('🔍 Professions recibidas en updateUser:', JSON.stringify(professions));
         // Asegurarse de que professions sea un array válido
         if (Array.isArray(professions)) {
           // Guardar el array directamente, incluso si está vacío
@@ -360,15 +362,21 @@ export class UserService {
           console.log('⚠️ Professions no es un array, se ignorará');
         }
       } else {
-        console.log('ℹ️ Professions no está presente en updateUserDto');
+        console.log('ℹ️ Professions no está presente en updateUserDto (undefined)');
       }
 
       // Preparar datos finales para actualización
-      const finalUpdateData = {
+      // Asegurarse de que professions se incluya explícitamente si está presente
+      const finalUpdateData: any = {
         ...updateData,
-        ...relationData,
         ...imageUpdates, // Incluir las URLs de las imágenes procesadas
       };
+      
+      // Agregar professions explícitamente si está presente (similar a createUser)
+      if (professions !== undefined && Array.isArray(professions)) {
+        finalUpdateData.professions = professions;
+        console.log('✅ Professions agregado explícitamente a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
+      }
       
       console.log('📝 Datos finales para actualizar:', JSON.stringify({
         ...finalUpdateData,
