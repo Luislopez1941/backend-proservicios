@@ -76,18 +76,12 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Usuario actualizado exitosamente', type: UserResponseDto })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
   async update(@Param('type') type: string, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
-    console.log('🎯 Controller update - updateUserDto recibido:', JSON.stringify(updateUserDto));
-    console.log('🎯 Controller update - professions en DTO:', JSON.stringify(updateUserDto.professions));
-    console.log('🎯 Controller update - tipo de professions:', typeof updateUserDto.professions, Array.isArray(updateUserDto.professions));
-    
-    // CORREGIR: Si professions viene como array anidado [[]], aplanarlo aquí
+    // Si professions viene como array anidado [[]], aplanarlo aquí
     if (updateUserDto.professions && Array.isArray(updateUserDto.professions)) {
       // Si es un array anidado como [[]], extraer el array interno
       if (updateUserDto.professions.length > 0 && Array.isArray(updateUserDto.professions[0])) {
-        console.log('🔧 Controller: Detectado array anidado, aplanando...');
         const innerArray = updateUserDto.professions[0];
         updateUserDto.professions = innerArray.length > 0 ? innerArray : [];
-        console.log('🔧 Controller: Professions aplanado:', JSON.stringify(updateUserDto.professions));
       } else if (updateUserDto.professions.length === 0) {
         // Si es un array vacío, mantenerlo así
         updateUserDto.professions = [];

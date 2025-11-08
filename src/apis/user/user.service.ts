@@ -25,16 +25,7 @@ export class UserService {
    * Maneja casos donde Prisma devuelve arrays anidados como [[]]
    */
   private normalizeProfessions(professions: any): any[] {
-    console.log('🔧 normalizeProfessions llamado con:', {
-      professions: JSON.stringify(professions),
-      type: typeof professions,
-      isArray: Array.isArray(professions),
-      isNull: professions === null,
-      isUndefined: professions === undefined
-    });
-    
     if (professions === null || professions === undefined) {
-      console.log('🔧 normalizeProfessions: professions es null/undefined, retornando []');
       return [];
     }
     
@@ -42,19 +33,14 @@ export class UserService {
     if (Array.isArray(professions)) {
       // Si el primer elemento es un array (caso [[]])
       if (professions.length > 0 && Array.isArray(professions[0])) {
-        console.log('🔧 normalizeProfessions: detectado array anidado, extrayendo primer elemento');
         // Devolver el primer array si tiene contenido, o array vacío
-        const result = professions[0].length > 0 ? professions[0] : [];
-        console.log('🔧 normalizeProfessions: resultado de array anidado:', JSON.stringify(result));
-        return result;
+        return professions[0].length > 0 ? professions[0] : [];
       }
       // Si es un array normal, devolverlo tal cual
-      console.log('🔧 normalizeProfessions: array normal, retornando tal cual:', JSON.stringify(professions));
       return professions;
     }
     
     // Si no es un array, devolver array vacío
-    console.log('🔧 normalizeProfessions: no es array, retornando []');
     return [];
   }
 
@@ -269,14 +255,6 @@ export class UserService {
 
   async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     try {
-      console.log('🚀 updateUser llamado con:', {
-        id,
-        updateUserDto: JSON.stringify(updateUserDto),
-        professions: JSON.stringify(updateUserDto.professions),
-        professionsType: typeof updateUserDto.professions,
-        isArray: Array.isArray(updateUserDto.professions)
-      });
-      
       // Buscar el usuario
       const existingUser = await this.prisma.user.findUnique({
         where: { id }
@@ -351,9 +329,6 @@ export class UserService {
       // Extraer campos especiales que necesitan procesamiento
       const { profilePhoto, background, workPhotos, id: userId, type, professions, ...userData } = updateUserDto;
 
-      console.log('🔍 DEBUG - professions extraído del DTO:', JSON.stringify(professions));
-      console.log('🔍 DEBUG - professions en updateUserDto original:', JSON.stringify(updateUserDto.professions));
-
       // Si se está actualizando la contraseña, encriptarla
       let updateData = { ...userData };
       if (updateUserDto.password) {
@@ -382,7 +357,6 @@ export class UserService {
         if (Array.isArray(professionsToSave)) {
           // Si el primer elemento es un array, extraerlo (caso [[]])
           if (professionsToSave.length > 0 && Array.isArray(professionsToSave[0])) {
-            console.log('⚠️ Detectado array anidado, aplanando...');
             const innerArray = professionsToSave[0];
             // Si el array interno tiene contenido, usarlo; si está vacío, usar array vacío
             professionsToSave = innerArray.length > 0 ? innerArray : [];
@@ -392,16 +366,7 @@ export class UserService {
         } else {
           finalUpdateData.professions = [];
         }
-        console.log('✅ Professions procesado y agregado a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
-      } else {
-        console.log('⚠️ WARNING: professions no está en updateUserDto ni en variable extraída');
       }
-      
-      console.log('📝 Datos finales para actualizar (antes de Prisma):', JSON.stringify({
-        ...finalUpdateData,
-        password: finalUpdateData.password ? '[HIDDEN]' : undefined
-      }));
-      console.log('📝 Professions en finalUpdateData antes de Prisma:', JSON.stringify(finalUpdateData.professions));
 
       // Actualizar el usuario
       const user = await this.prisma.user.update({
@@ -429,12 +394,8 @@ export class UserService {
         }
       });
 
-      console.log('📖 Professions después de actualizar (raw):', JSON.stringify(user.professions));
-      console.log('📖 Tipo de professions:', typeof user.professions, Array.isArray(user.professions));
-
       // Normalizar el campo professions para asegurar que sea un array plano
       const normalizedProfessions = this.normalizeProfessions(user.professions);
-      console.log('✨ Professions normalizadas:', JSON.stringify(normalizedProfessions));
       
       const normalizedUser = {
         ...user,
