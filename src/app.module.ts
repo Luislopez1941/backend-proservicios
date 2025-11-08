@@ -15,6 +15,7 @@ import { SocketModule } from './apis/socket/socket.module';
 import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
 import { ReviewUserModule } from './apis/review-user/review-user.module';
 import { JobModule } from './apis/job/job.module';
+import { ReservationModule } from './apis/reservation/reservation.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { JobModule } from './apis/job/job.module';
     SocketModule,
     JobProposalModule,
     ReviewUserModule,
-    JobModule
+    JobModule,
+    ReservationModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -65,6 +65,14 @@ enum ProposalStatus {
   payment_cancelled
 }
 
+enum ReservationStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  rejected
+}
+
 // Models
 model User {
   id               Int     @id @default(autoincrement())
@@ -136,6 +144,8 @@ model User {
   user2Chats       Chat[]        @relation("ChatReceiver")
   proposals        JobProposal[]
   reviews          Review[]      @relation("ReviewUser")
+  issuedReservations Reservation[] @relation("ReservationIssuer")
+  receivedReservations Reservation[] @relation("ReservationReceiver")
 
   @@map("users")
 }
@@ -301,4 +311,23 @@ model Location {
 
   @@unique([id_location, type], name: "id_location_type")
   @@map("locations")
+}
+
+model Reservation {
+  id          Int              @id @default(autoincrement())
+  issuer_id   Int              // Usuario que hace la reservación (cliente)
+  receiver_id Int              // Usuario que recibe la reservación (trabajador)
+  date        DateTime         // Fecha de la reservación
+  start_time  String           @db.VarChar(10) // Hora de inicio (ej: "09:00")
+  end_time    String           @db.VarChar(10)  // Hora de fin (ej: "10:00")
+  status      ReservationStatus @default(pending)
+  notes       String?          @db.Text        // Notas adicionales de la reservación
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @default(now())
+
+  // Relaciones
+  issuer   User @relation("ReservationIssuer", fields: [issuer_id], references: [id], onDelete: Cascade)
+  receiver User @relation("ReservationReceiver", fields: [receiver_id], references: [id], onDelete: Cascade)
+
+  @@map("reservations")
 }
