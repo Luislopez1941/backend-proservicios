@@ -25,7 +25,16 @@ export class UserService {
    * Maneja casos donde Prisma devuelve arrays anidados como [[]]
    */
   private normalizeProfessions(professions: any): any[] {
-    if (!professions) {
+    console.log('🔧 normalizeProfessions llamado con:', {
+      professions: JSON.stringify(professions),
+      type: typeof professions,
+      isArray: Array.isArray(professions),
+      isNull: professions === null,
+      isUndefined: professions === undefined
+    });
+    
+    if (professions === null || professions === undefined) {
+      console.log('🔧 normalizeProfessions: professions es null/undefined, retornando []');
       return [];
     }
     
@@ -33,14 +42,19 @@ export class UserService {
     if (Array.isArray(professions)) {
       // Si el primer elemento es un array (caso [[]])
       if (professions.length > 0 && Array.isArray(professions[0])) {
+        console.log('🔧 normalizeProfessions: detectado array anidado, extrayendo primer elemento');
         // Devolver el primer array si tiene contenido, o array vacío
-        return professions[0].length > 0 ? professions[0] : [];
+        const result = professions[0].length > 0 ? professions[0] : [];
+        console.log('🔧 normalizeProfessions: resultado de array anidado:', JSON.stringify(result));
+        return result;
       }
       // Si es un array normal, devolverlo tal cual
+      console.log('🔧 normalizeProfessions: array normal, retornando tal cual:', JSON.stringify(professions));
       return professions;
     }
     
     // Si no es un array, devolver array vacío
+    console.log('🔧 normalizeProfessions: no es array, retornando []');
     return [];
   }
 
@@ -373,15 +387,24 @@ export class UserService {
       };
       
       // Agregar professions explícitamente si está presente (similar a createUser)
-      if (professions !== undefined && Array.isArray(professions)) {
-        finalUpdateData.professions = professions;
-        console.log('✅ Professions agregado explícitamente a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
+      // IMPORTANTE: Usar la misma sintaxis que en createUser
+      if (professions !== undefined) {
+        if (Array.isArray(professions)) {
+          // Usar la misma sintaxis que createUser: ...(professions && { professions: professions })
+          finalUpdateData.professions = professions;
+          console.log('✅ Professions agregado explícitamente a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
+        } else {
+          console.log('⚠️ Professions no es un array válido, se ignorará');
+        }
+      } else {
+        console.log('ℹ️ Professions es undefined, no se actualizará el campo');
       }
       
-      console.log('📝 Datos finales para actualizar:', JSON.stringify({
+      console.log('📝 Datos finales para actualizar (antes de Prisma):', JSON.stringify({
         ...finalUpdateData,
         password: finalUpdateData.password ? '[HIDDEN]' : undefined
       }));
+      console.log('📝 Professions en finalUpdateData antes de Prisma:', JSON.stringify(finalUpdateData.professions));
 
       // Actualizar el usuario
       const user = await this.prisma.user.update({
