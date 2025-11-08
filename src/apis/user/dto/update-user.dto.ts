@@ -45,8 +45,8 @@ export class UpdateUserDto {
     example: [{id: 3, name: "Electricista", category: "Técnico"}],
     required: false
   })
-  @IsArray({ message: 'Las profesiones deben ser un array' })
   @IsOptional()
+  @IsArray({ message: 'Las profesiones deben ser un array' })
   professions?: any[];
 
   @ApiProperty({ 

@@ -390,9 +390,11 @@ export class UserService {
       // IMPORTANTE: Usar la misma sintaxis que en createUser
       if (professions !== undefined) {
         if (Array.isArray(professions)) {
-          // Usar la misma sintaxis que createUser: ...(professions && { professions: professions })
+          // Serializar explícitamente como JSON para asegurar que Prisma lo maneje correctamente
+          // Prisma espera que los campos Json sean objetos/arrays de JavaScript, no strings
           finalUpdateData.professions = professions;
           console.log('✅ Professions agregado explícitamente a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
+          console.log('✅ Tipo de professions antes de Prisma:', typeof finalUpdateData.professions, Array.isArray(finalUpdateData.professions));
         } else {
           console.log('⚠️ Professions no es un array válido, se ignorará');
         }
