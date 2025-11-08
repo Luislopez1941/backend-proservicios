@@ -110,6 +110,67 @@ export class ReservationService {
     }
   }
 
+  async findByUserId(userId: number) {
+    try {
+      // Validar que el usuario exista
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
+      }
+
+      // Obtener todas las reservaciones donde el usuario es issuer o receiver
+      const reservations = await this.prisma.reservation.findMany({
+        where: {
+          OR: [
+            { issuer_id: userId },
+            { receiver_id: userId }
+          ]
+        },
+        include: {
+          issuer: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              email: true,
+              phone: true,
+              profilePhoto: true,
+            }
+          },
+          receiver: {
+            select: {
+              id: true,
+              first_name: true,
+              first_surname: true,
+              email: true,
+              phone: true,
+              profilePhoto: true,
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      });
+
+      return {
+        status: 'success',
+        message: 'Reservaciones obtenidas exitosamente',
+        data: reservations,
+        count: reservations.length
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error('Error en findByUserId reservation:', error);
+      throw new BadRequestException('Error al obtener las reservaciones');
+    }
+  }
+
   findAll() {
     return `This action returns all reservation`;
   }

@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ValidationPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { ReservationService } from './reservation.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
@@ -9,7 +9,7 @@ import { UpdateReservationDto } from './dto/update-reservation.dto';
 export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
-  @Post()
+  @Post('create')
   @ApiOperation({ summary: 'Crear reservación', description: 'Crea una nueva reservación entre un cliente y un trabajador' })
   @ApiBody({ type: CreateReservationDto })
   @ApiResponse({ status: 201, description: 'Reservación creada exitosamente' })
@@ -19,23 +19,17 @@ export class ReservationController {
     return this.reservationService.create(createReservationDto);
   }
 
-  @Get()
-  findAll() {
-    return this.reservationService.findAll();
+  @Get('get-by-user/:userId')
+  @ApiOperation({ 
+    summary: 'Obtener reservaciones por usuario', 
+    description: 'Obtiene todas las reservaciones de un usuario (tanto las que hizo como las que recibió)' 
+  })
+  @ApiParam({ name: 'userId', description: 'ID del usuario', type: Number })
+  @ApiResponse({ status: 200, description: 'Reservaciones obtenidas exitosamente' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async findByUserId(@Param('userId') userId: string) {
+    return this.reservationService.findByUserId(+userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.reservationService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReservationDto: UpdateReservationDto) {
-    return this.reservationService.update(+id, updateReservationDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reservationService.remove(+id);
-  }
+ 
 }
