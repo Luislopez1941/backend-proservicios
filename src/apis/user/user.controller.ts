@@ -79,6 +79,16 @@ export class UserController {
     console.log('🎯 Controller update - updateUserDto recibido:', JSON.stringify(updateUserDto));
     console.log('🎯 Controller update - professions en DTO:', JSON.stringify(updateUserDto.professions));
     console.log('🎯 Controller update - tipo de professions:', typeof updateUserDto.professions, Array.isArray(updateUserDto.professions));
+    
+    // CORREGIR: Si professions viene como array anidado [[]], aplanarlo aquí
+    if (updateUserDto.professions && Array.isArray(updateUserDto.professions)) {
+      if (updateUserDto.professions.length > 0 && Array.isArray(updateUserDto.professions[0])) {
+        console.log('🔧 Controller: Detectado array anidado, aplanando...');
+        updateUserDto.professions = updateUserDto.professions[0];
+        console.log('🔧 Controller: Professions aplanado:', JSON.stringify(updateUserDto.professions));
+      }
+    }
+    
     return this.userService.updateUser(+id, updateUserDto);
   }
 
