@@ -329,6 +329,46 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  // Método para manejar el evento de typing
+  @SubscribeMessage('typing')
+  async handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { issuer_id: number; receiver_id: number; chat_id: number; is_typing: boolean; room?: string }
+  ) {
+    try {
+      const user = this.socketService.getUser(client.id);
+      
+      if (!user) {
+        this.logger.warn(`Unauthenticated user attempted to send typing event: ${client.id}`);
+        return;
+      }
+
+      // Validar datos requeridos
+      if (data.issuer_id === undefined || data.receiver_id === undefined || data.is_typing === undefined) {
+        this.logger.warn(`Invalid typing data from user ${user.email}:`, data);
+        return;
+      }
+
+      // Reenviar el evento de typing al receptor
+      const typingData = {
+        issuer_id: data.issuer_id,
+        receiver_id: data.receiver_id,
+        chat_id: data.chat_id,
+        is_typing: data.is_typing,
+        room: data.room,
+        timestamp: new Date().toISOString()
+      };
+
+      // Enviar el evento de typing SOLO al receptor
+      await this.sendToUser(data.receiver_id.toString(), 'typing', typingData);
+
+      this.logger.log(`Typing event sent from ${data.issuer_id} to ${data.receiver_id}: ${data.is_typing}`);
+
+    } catch (error) {
+      this.logger.error('Error handling typing event:', error);
+    }
+  }
+
   // Método para confirmar que el mensaje fue recibido
   @SubscribeMessage('message-received-confirmation')
   async handleMessageReceivedConfirmation(
