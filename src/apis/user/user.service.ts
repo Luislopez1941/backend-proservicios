@@ -369,14 +369,28 @@ export class UserService {
       
       // CRÍTICO: Agregar professions explícitamente SIEMPRE que esté presente en el DTO
       // Usar la misma lógica que createUser: ...(professions && { professions: professions })
+      let professionsToSave: any = null;
+      
       if (updateUserDto.professions !== undefined) {
-        // Si professions está en el DTO (incluso si es null o array vacío), actualizarlo
-        finalUpdateData.professions = updateUserDto.professions;
-        console.log('✅ Professions agregado a finalUpdateData desde updateUserDto:', JSON.stringify(finalUpdateData.professions));
+        professionsToSave = updateUserDto.professions;
       } else if (professions !== undefined) {
-        // Fallback: usar la variable extraída
-        finalUpdateData.professions = professions;
-        console.log('✅ Professions agregado a finalUpdateData desde variable extraída:', JSON.stringify(finalUpdateData.professions));
+        professionsToSave = professions;
+      }
+      
+      if (professionsToSave !== null && professionsToSave !== undefined) {
+        // Aplanar el array si está anidado (caso [[]])
+        if (Array.isArray(professionsToSave)) {
+          // Si el primer elemento es un array, extraerlo (caso [[]])
+          if (professionsToSave.length > 0 && Array.isArray(professionsToSave[0])) {
+            console.log('⚠️ Detectado array anidado, aplanando...');
+            professionsToSave = professionsToSave[0];
+          }
+          // Asegurarse de que sea un array válido
+          finalUpdateData.professions = Array.isArray(professionsToSave) ? professionsToSave : [];
+        } else {
+          finalUpdateData.professions = [];
+        }
+        console.log('✅ Professions procesado y agregado a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
       } else {
         console.log('⚠️ WARNING: professions no está en updateUserDto ni en variable extraída');
       }
