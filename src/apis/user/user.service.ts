@@ -20,6 +20,30 @@ export class UserService {
     private supabaseStorage: SupabaseStorageService
   ) {}
 
+  /**
+   * Normaliza el campo professions para asegurar que siempre sea un array plano
+   * Maneja casos donde Prisma devuelve arrays anidados como [[]]
+   */
+  private normalizeProfessions(professions: any): any[] {
+    if (!professions) {
+      return [];
+    }
+    
+    // Si es un array
+    if (Array.isArray(professions)) {
+      // Si el primer elemento es un array (caso [[]])
+      if (professions.length > 0 && Array.isArray(professions[0])) {
+        // Devolver el primer array si tiene contenido, o array vacío
+        return professions[0].length > 0 ? professions[0] : [];
+      }
+      // Si es un array normal, devolverlo tal cual
+      return professions;
+    }
+    
+    // Si no es un array, devolver array vacío
+    return [];
+  }
+
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
       // Verificar si el correo ya existe
@@ -302,7 +326,7 @@ export class UserService {
       }
 
       // Preparar los datos para actualizar el usuario
-      const { profilePhoto, background, workPhotos, id: userId, type, ...userData } = updateUserDto;
+      const { profilePhoto, background, workPhotos, id: userId, type, professions, ...userData } = updateUserDto;
 
 
       // Si se está actualizando la contraseña, encriptarla
@@ -314,7 +338,20 @@ export class UserService {
 
       // Preparar las relaciones para la actualización
       const relationData: any = {};
-      // Las profesiones ahora se manejan directamente en userData si están presentes
+      
+      // Manejar professions correctamente como JSON
+      if (professions !== undefined) {
+        // Asegurarse de que professions sea un array válido
+        if (Array.isArray(professions) && professions.length > 0) {
+          relationData.professions = professions;
+        } else if (Array.isArray(professions) && professions.length === 0) {
+          // Si es un array vacío, guardarlo como array vacío
+          relationData.professions = [];
+        } else {
+          // Si es null o undefined, no actualizar el campo
+          // No hacer nada, mantener el valor actual
+        }
+      }
 
       // Actualizar el usuario
       const user = await this.prisma.user.update({
@@ -346,10 +383,16 @@ export class UserService {
         }
       });
 
+      // Normalizar el campo professions para asegurar que sea un array plano
+      const normalizedUser = {
+        ...user,
+        professions: this.normalizeProfessions(user.professions)
+      };
+
       return {
         status: 'success',
         message: 'Usuario actualizado exitosamente',
-        data: user
+        data: normalizedUser
       };
     } catch (error) {
       console.error('Error en updateUser:', error);
@@ -935,13 +978,17 @@ export class UserService {
         })
       );
 
+      // Normalizar el campo professions
+      const normalizedUser = {
+        ...user,
+        professions: this.normalizeProfessions(user.professions),
+        reviews: reviewsWithProposals
+      };
+
       return {
         status: 'success',
         message: 'Usuario con reviews y propuestas obtenido exitosamente',
-        data: {
-          ...user,
-          reviews: reviewsWithProposals
-        }
+        data: normalizedUser
       };
     } catch (error) {
       console.error('Error fetching user with reviews and proposals:', error);
