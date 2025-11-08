@@ -348,8 +348,11 @@ export class UserService {
       }
 
       // Preparar los datos para actualizar el usuario
+      // Extraer campos especiales que necesitan procesamiento
       const { profilePhoto, background, workPhotos, id: userId, type, professions, ...userData } = updateUserDto;
 
+      console.log('🔍 DEBUG - professions extraído del DTO:', JSON.stringify(professions));
+      console.log('🔍 DEBUG - professions en updateUserDto original:', JSON.stringify(updateUserDto.professions));
 
       // Si se está actualizando la contraseña, encriptarla
       let updateData = { ...userData };
@@ -358,48 +361,24 @@ export class UserService {
         updateData.password = await bcrypt.hash(updateUserDto.password, salt);
       }
 
-      // Preparar las relaciones para la actualización
-      const relationData: any = {};
-      
-      // Manejar professions correctamente como JSON (similar a createUser)
-      console.log('🔍 Professions recibidas en updateUser:', JSON.stringify(professions));
-      console.log('🔍 Tipo de professions:', typeof professions, Array.isArray(professions));
-      
-      if (professions !== undefined) {
-        // Asegurarse de que professions sea un array válido
-        if (Array.isArray(professions)) {
-          // Guardar el array directamente, incluso si está vacío
-          relationData.professions = professions;
-          console.log('✅ Professions que se guardarán:', JSON.stringify(relationData.professions));
-        } else {
-          // Si no es un array, convertir a array vacío
-          console.log('⚠️ Professions no es un array, se ignorará');
-        }
-      } else {
-        console.log('ℹ️ Professions no está presente en updateUserDto (undefined)');
-      }
-
       // Preparar datos finales para actualización
-      // Asegurarse de que professions se incluya explícitamente si está presente
       const finalUpdateData: any = {
         ...updateData,
         ...imageUpdates, // Incluir las URLs de las imágenes procesadas
       };
       
-      // Agregar professions explícitamente si está presente (similar a createUser)
-      // IMPORTANTE: Usar la misma sintaxis que en createUser
-      if (professions !== undefined) {
-        if (Array.isArray(professions)) {
-          // Serializar explícitamente como JSON para asegurar que Prisma lo maneje correctamente
-          // Prisma espera que los campos Json sean objetos/arrays de JavaScript, no strings
-          finalUpdateData.professions = professions;
-          console.log('✅ Professions agregado explícitamente a finalUpdateData:', JSON.stringify(finalUpdateData.professions));
-          console.log('✅ Tipo de professions antes de Prisma:', typeof finalUpdateData.professions, Array.isArray(finalUpdateData.professions));
-        } else {
-          console.log('⚠️ Professions no es un array válido, se ignorará');
-        }
+      // CRÍTICO: Agregar professions explícitamente SIEMPRE que esté presente en el DTO
+      // Usar la misma lógica que createUser: ...(professions && { professions: professions })
+      if (updateUserDto.professions !== undefined) {
+        // Si professions está en el DTO (incluso si es null o array vacío), actualizarlo
+        finalUpdateData.professions = updateUserDto.professions;
+        console.log('✅ Professions agregado a finalUpdateData desde updateUserDto:', JSON.stringify(finalUpdateData.professions));
+      } else if (professions !== undefined) {
+        // Fallback: usar la variable extraída
+        finalUpdateData.professions = professions;
+        console.log('✅ Professions agregado a finalUpdateData desde variable extraída:', JSON.stringify(finalUpdateData.professions));
       } else {
-        console.log('ℹ️ Professions es undefined, no se actualizará el campo');
+        console.log('⚠️ WARNING: professions no está en updateUserDto ni en variable extraída');
       }
       
       console.log('📝 Datos finales para actualizar (antes de Prisma):', JSON.stringify({
