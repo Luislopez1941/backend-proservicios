@@ -20,29 +20,6 @@ export class UserService {
     private supabaseStorage: SupabaseStorageService
   ) {}
 
-  /**
-   * Normaliza el campo professions para asegurar que siempre sea un array plano
-   * Maneja casos donde Prisma devuelve arrays anidados como [[]]
-   */
-  private normalizeProfessions(professions: any): any[] {
-    if (professions === null || professions === undefined) {
-      return [];
-    }
-    
-    // Si es un array
-    if (Array.isArray(professions)) {
-      // Si el primer elemento es un array (caso [[]])
-      if (professions.length > 0 && Array.isArray(professions[0])) {
-        // Devolver el primer array si tiene contenido, o array vacío
-        return professions[0].length > 0 ? professions[0] : [];
-      }
-      // Si es un array normal, devolverlo tal cual
-      return professions;
-    }
-    
-    // Si no es un array, devolver array vacío
-    return [];
-  }
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
@@ -394,12 +371,9 @@ export class UserService {
         }
       });
 
-      // Normalizar el campo professions para asegurar que sea un array plano
-      const normalizedProfessions = this.normalizeProfessions(user.professions);
-      
       const normalizedUser = {
         ...user,
-        professions: normalizedProfessions
+        professions: user.professions || []
       };
 
       return {
@@ -991,10 +965,9 @@ export class UserService {
         })
       );
 
-      // Normalizar el campo professions
       const normalizedUser = {
         ...user,
-        professions: this.normalizeProfessions(user.professions),
+        professions: user.professions || [],
         reviews: reviewsWithProposals
       };
 
