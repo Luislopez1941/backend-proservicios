@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsArray, ValidateNested, IsEmail, MinLength, IsEnum, IsBoolean, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsArray, ValidateNested, IsEmail, MinLength, IsEnum, IsBoolean, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserType } from '@prisma/client';
@@ -132,6 +132,17 @@ export class UpdateUserDto {
   gender?: string;
 
   @ApiProperty({ 
+    description: 'Edad del usuario', 
+    example: 28,
+    required: false
+  })
+  @IsInt({ message: 'La edad debe ser un número entero' })
+  @Min(1, { message: 'La edad debe ser mayor a 0' })
+  @Max(150, { message: 'La edad debe ser menor a 150' })
+  @IsOptional()
+  age?: number;
+
+  @ApiProperty({ 
     description: 'Tipo de usuario', 
     enum: UserType,
     example: 'worker',
@@ -185,4 +196,14 @@ export class UpdateUserDto {
   })
   @IsOptional()
   calendar?: any;
+
+  @ApiProperty({ 
+    description: 'Indica si el calendario está activado para el usuario', 
+    example: true,
+    required: false,
+    default: false
+  })
+  @IsBoolean({ message: 'El estado de activación del calendario debe ser un booleano' })
+  @IsOptional()
+  calendar_enabled?: boolean;
 }

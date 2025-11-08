@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, IsBoolean, IsArray, IsNumber, ValidateNested } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, IsBoolean, IsArray, IsNumber, ValidateNested, IsInt, Min, Max } from 'class-validator';
 import { UserType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -162,6 +162,17 @@ export class CreateUserDto {
   @IsString({ message: 'El género debe ser una cadena de texto' })
   @IsOptional()
   gender?: string;
+
+  @ApiProperty({ 
+    description: 'Edad del usuario', 
+    example: 28, 
+    required: false 
+  })
+  @IsInt({ message: 'La edad debe ser un número entero' })
+  @Min(1, { message: 'La edad debe ser mayor a 0' })
+  @Max(150, { message: 'La edad debe ser menor a 150' })
+  @IsOptional()
+  age?: number;
 
   @ApiProperty({ 
     description: 'Tipo de usuario', 
