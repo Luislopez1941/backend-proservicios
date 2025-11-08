@@ -19,6 +19,15 @@ async function bootstrap() {
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+    exceptionFactory: (errors) => {
+      const messages = errors.map(error => {
+        return Object.values(error.constraints || {}).join(', ');
+      });
+      return new ValidationPipe().createExceptionFactory()(errors);
+    },
   }));
 
   // Habilitar CORS

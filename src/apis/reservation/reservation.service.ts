@@ -106,7 +106,8 @@ export class ReservationService {
         throw error;
       }
       console.error('Error en create reservation:', error);
-      throw new BadRequestException('Error al crear la reservación');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      throw new BadRequestException(`Error al crear la reservación: ${error.message || 'Error desconocido'}`);
     }
   }
 

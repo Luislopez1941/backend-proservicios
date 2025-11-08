@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsInt, IsDateString, IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsInt, IsDateString, IsString, IsOptional, MinLength, MaxLength, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateReservationDto {
@@ -49,9 +49,11 @@ export class CreateReservationDto {
   @ApiProperty({ 
     description: 'Notas adicionales de la reservación', 
     example: 'Por favor llegar 10 minutos antes',
-    required: false 
+    required: false,
+    nullable: true
   })
-  @IsString({ message: 'Las notas deben ser una cadena de texto' })
   @IsOptional()
-  notes?: string;
+  @ValidateIf((o) => o.notes !== null && o.notes !== undefined)
+  @IsString({ message: 'Las notas deben ser una cadena de texto' })
+  notes?: string | null;
 }
