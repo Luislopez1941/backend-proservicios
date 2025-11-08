@@ -75,7 +75,10 @@ export class UserController {
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Usuario actualizado exitosamente', type: UserResponseDto })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async update(@Param('type') type: string, @Param('id') id: string, @Body(ValidationPipe) updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async update(@Param('type') type: string, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+    console.log('🎯 Controller update - updateUserDto recibido:', JSON.stringify(updateUserDto));
+    console.log('🎯 Controller update - professions en DTO:', JSON.stringify(updateUserDto.professions));
+    console.log('🎯 Controller update - tipo de professions:', typeof updateUserDto.professions, Array.isArray(updateUserDto.professions));
     return this.userService.updateUser(+id, updateUserDto);
   }
 
