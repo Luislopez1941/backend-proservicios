@@ -5,9 +5,10 @@ import { SocketService } from './socket.service';
 import { SupabaseService } from './supabase.service';
 import { SocketController } from './socket.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [JwtModule, PrismaModule],
+  imports: [JwtModule, PrismaModule, NotificationModule],
   controllers: [SocketController],
   providers: [SocketGateway, SocketService, SupabaseService],
   exports: [SocketService, SupabaseService, SocketGateway],

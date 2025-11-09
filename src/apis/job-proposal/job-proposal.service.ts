@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SupabaseStorageService } from '../storage/supabase-storage.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateJobProposalDto } from './dto/create-job-proposal.dto';
 import { UpdateJobProposalDto } from './dto/update-job-proposal.dto';
 
@@ -8,7 +9,8 @@ import { UpdateJobProposalDto } from './dto/update-job-proposal.dto';
 export class JobProposalService {
   constructor(
     private prisma: PrismaService,
-    private supabaseStorage: SupabaseStorageService
+    private supabaseStorage: SupabaseStorageService,
+    private notificationService: NotificationService
   ) {}
 
   async create(createJobProposalDto: CreateJobProposalDto) {
@@ -189,6 +191,31 @@ export class JobProposalService {
             }
           });
 
+          // Crear notificación para el usuario receptor
+          try {
+            console.log('🔔 Creando notificación para el receptor de la propuesta...');
+            await this.notificationService.create({
+              user_id: createJobProposalDto.receiver_id, // El que recibe la propuesta
+              from_user_id: createJobProposalDto.issuer_id, // El que envía la propuesta
+              type: 'proposal_received',
+              title: 'Nueva propuesta recibida',
+              message: `Has recibido una nueva propuesta: ${createJobProposalDto.title}`,
+              is_read: false,
+              proposal_id: updatedProposal.id, // Relacionar con la propuesta
+              metadata: {
+                proposal_id: updatedProposal.id,
+                message_id: message.id,
+                chat_id: chat.id,
+                issuer_id: createJobProposalDto.issuer_id,
+                receiver_id: createJobProposalDto.receiver_id
+              }
+            });
+            console.log('✅ Notificación creada para el receptor');
+          } catch (notificationError) {
+            console.error('⚠️ Error al crear notificación:', notificationError);
+            // No fallar el proceso si la notificación falla
+          }
+
           return {
             status: 'success',
             message: 'Propuesta de trabajo creada exitosamente',
@@ -212,6 +239,32 @@ export class JobProposalService {
       }
 
       console.log('🔍 DEBUG: Job proposal creada exitosamente con ID:', jobProposal.id);
+      
+      // Crear notificación para el usuario receptor
+      try {
+        console.log('🔔 Creando notificación para el receptor de la propuesta...');
+        await this.notificationService.create({
+          user_id: createJobProposalDto.receiver_id, // El que recibe la propuesta
+          from_user_id: createJobProposalDto.issuer_id, // El que envía la propuesta
+          type: 'proposal_received',
+          title: 'Nueva propuesta recibida',
+          message: `Has recibido una nueva propuesta: ${createJobProposalDto.title}`,
+          is_read: false,
+          proposal_id: jobProposal.id, // Relacionar con la propuesta
+          metadata: {
+            proposal_id: jobProposal.id,
+            message_id: message.id,
+            chat_id: chat.id,
+            issuer_id: createJobProposalDto.issuer_id,
+            receiver_id: createJobProposalDto.receiver_id
+          }
+        });
+        console.log('✅ Notificación creada para el receptor');
+      } catch (notificationError) {
+        console.error('⚠️ Error al crear notificación:', notificationError);
+        // No fallar el proceso si la notificación falla
+      }
+
       console.log('🔍 DEBUG: ✅ PROCESO COMPLETADO');
 
       return {

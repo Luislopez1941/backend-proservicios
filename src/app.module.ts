@@ -16,6 +16,7 @@ import { JobProposalModule } from './apis/job-proposal/job-proposal.module';
 import { ReviewUserModule } from './apis/review-user/review-user.module';
 import { JobModule } from './apis/job/job.module';
 import { ReservationModule } from './apis/reservation/reservation.module';
+import { NotificationModule } from './apis/notification/notification.module';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { ReservationModule } from './apis/reservation/reservation.module';
     JobProposalModule,
     ReviewUserModule,
     JobModule,
-    ReservationModule
+    ReservationModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

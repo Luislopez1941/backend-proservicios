@@ -73,6 +73,26 @@ enum ReservationStatus {
   rejected
 }
 
+enum NotificationType {
+  proposal_received
+  proposal_accepted
+  proposal_rejected
+  proposal_cancelled
+  job_assigned
+  job_completed
+  job_cancelled
+  message_received
+  reservation_created
+  reservation_confirmed
+  reservation_cancelled
+  review_received
+  appointment_confirmed
+  appointment_cancelled
+  payment_received
+  payment_failed
+  system
+}
+
 // Models
 model User {
   id               Int     @id @default(autoincrement())
@@ -146,6 +166,8 @@ model User {
   reviews          Review[]      @relation("ReviewUser")
   issuedReservations Reservation[] @relation("ReservationIssuer")
   receivedReservations Reservation[] @relation("ReservationReceiver")
+  receivedNotifications Notification[] @relation("NotificationReceiver")
+  sentNotifications     Notification[] @relation("NotificationSender")
 
   @@map("users")
 }
@@ -202,6 +224,9 @@ model Job {
 
   // Relaciones
   user User @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  // Relaciones inversas
+  notifications Notification[]
 
   @@map("jobs")
 }
@@ -285,6 +310,9 @@ model JobProposal {
   // Relaciones
   message Message @relation(fields: [message_id], references: [id])
   user    User    @relation(fields: [user_id], references: [id])
+  
+  // Relaciones inversas
+  notifications Notification[]
 }
 
 model Review {
@@ -330,4 +358,37 @@ model Reservation {
   receiver User @relation("ReservationReceiver", fields: [receiver_id], references: [id], onDelete: Cascade)
 
   @@map("reservations")
+}
+
+model Notification {
+  id          Int             @id @default(autoincrement())
+  user_id     Int             // Usuario que recibe la notificación
+  from_user_id Int?           // ID del usuario que envía/crea la notificación (opcional)
+  type        NotificationType // Tipo de notificación
+  title       String          @db.VarChar(255) // Título de la notificación
+  message     String          @db.Text // Mensaje de la notificación
+  is_read     Boolean         @default(false) // Si la notificación ha sido leída
+  read_at     DateTime?       // Fecha en que se leyó la notificación
+  
+  // Relaciones opcionales
+  job_id      Int?            // ID del trabajo relacionado (opcional)
+  proposal_id Int?            // ID de la propuesta relacionada (opcional)
+  
+  // Datos adicionales en JSON (para información extra)
+  metadata    Json?           // Datos adicionales de la notificación
+  
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @default(now())
+
+  // Relaciones
+  user      User         @relation("NotificationReceiver", fields: [user_id], references: [id], onDelete: Cascade)
+  fromUser  User?        @relation("NotificationSender", fields: [from_user_id], references: [id], onDelete: SetNull)
+  job       Job?         @relation(fields: [job_id], references: [id], onDelete: SetNull)
+  proposal  JobProposal? @relation(fields: [proposal_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([from_user_id])
+  @@index([is_read])
+  @@index([created_at])
+  @@map("notifications")
 }

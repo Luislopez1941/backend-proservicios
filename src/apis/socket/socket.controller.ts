@@ -77,8 +77,8 @@ export class SocketController {
   }
 
   @Post('mark-message-read')
-  async markMessageRead(@Body() data: { messageId: string; userId: string }) {
-    const result = await this.socketService.markMessageAsRead(data.messageId, data.userId);
+  async markMessageRead(@Body() data: { chatId: string; userId: string }) {
+    const result = await this.socketService.markMessageAsRead(parseInt(data.chatId), parseInt(data.userId));
     return {
       success: true,
       data: result,
